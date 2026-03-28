@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash tools/build_keil.sh)",
+      "Bash(bash tools/flash_keil.sh)",
+      "Bash(git init:*)",
+      "Bash(git config:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

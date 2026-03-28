@@ -1,0 +1,45 @@
+# Build outputs
+MDK-ARM/*/ very_test
+*.axf
+*.hex
+*.bin
+*.map
+*.lst
+*.dep
+*.lnp
+*.iex
+*.sct
+*.tra
+*.sct.bak
+
+# Object files
+*.o
+*.obj
+*.crf
+
+# Keil UV4 project files
+*.uvguix.*
+*.uvoptx
+*.uvopt
+*.uvgui.*
+*.scvd
+
+# Log files
+*.htm
+*.html
+*.txt
+!README.txt
+
+# J-Link
+JLink*
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# Cache
+.cache/
+
+# OS files
+.DS_Store
+Thumbs.db
