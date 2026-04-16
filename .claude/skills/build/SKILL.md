@@ -17,7 +17,17 @@ Compile the Keil project by executing `tools/build_keil.sh`.
 
 ## Steps
 
-### 1. Execute Build
+### 1. Check Requirement Consistency
+
+**Before building, MUST run:** `skill: check-req`
+
+- If check-req PASSED (all consistent): Continue to build
+- If check-req FAILED (inconsistencies found):
+  - Show inconsistency report
+  - STOP and ask user to run `/sync-req` to fix
+  - Do NOT proceed with build
+
+### 2. Execute Build
 
 Run: `bash tools/build_keil.sh`
 

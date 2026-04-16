@@ -2,17 +2,7 @@
 /**
   ******************************************************************************
   * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2026 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
+  * @brief          : Main program body with layered architecture
   ******************************************************************************
   */
 /* USER CODE END Header */
@@ -21,10 +11,14 @@
 #include "usart.h"
 #include "gpio.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
+/* Layered Architecture Includes */
+#include "breathe_app.h"
+#include "led_service.h"
+#include "pwm_service.h"
+#include "log_service.h"
+#include "tim_driver.h"
 
-/* USER CODE END Includes */
+#include <stdint.h>
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
@@ -33,7 +27,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -44,13 +37,13 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+static void System_Init(void);
+static void System_Loop(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -64,43 +57,25 @@ void SystemClock_Config(void);
   */
 int main(void)
 {
+    /* MCU Configuration--------------------------------------------------------*/
+    HAL_Init();
+    SystemClock_Config();
 
-  /* USER CODE BEGIN 1 */
+    /* Initialize all configured peripherals */
+    MX_GPIO_Init();
+    MX_USART1_UART_Init();
 
-  /* USER CODE END 1 */
+    /* USER CODE BEGIN 2 */
+    System_Init();
+    /* USER CODE END 2 */
 
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_USART1_UART_Init();
-  /* USER CODE BEGIN 2 */
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
+    /* Infinite loop */
+    /* USER CODE BEGIN WHILE */
+    while (1)
+    {
+        System_Loop();
+    }
+    /* USER CODE END 3 */
 }
 
 /**
@@ -143,6 +118,81 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+/**
+  * @brief  System initialization using layered architecture
+  * @retval None
+  */
+static void System_Init(void)
+{
+    /* 1. Initialize Log Service */
+    LOG_Service_Init();
+    LOG_INFO("System Initializing...");
+
+    /* 2. Startup indicator: LED blink 3 times */
+    LED_Service_Init();
+    for (int i = 0; i < 3; i++) {
+        LED_Service_SetMode(LED_MODE_ON);
+        HAL_Delay(200);
+        LED_Service_SetMode(LED_MODE_OFF);
+        HAL_Delay(200);
+    }
+    HAL_Delay(500);
+
+    /* 3. Initialize Breathe Application */
+    Breathe_Config_t breathe_cfg = {
+        .period_ms = 5000,
+        .min_brightness = 0,
+        .max_brightness = 100,
+        .gamma = 22  /* 2.2 */
+    };
+    Breathe_App_Init(&breathe_cfg);
+
+    /* 4. Start LED in breathe mode */
+    LED_Service_SetMode(LED_MODE_BREATHE);
+
+    LOG_INFO_FMT("Breathe LED Started, Period: %d ms", breathe_cfg.period_ms);
+}
+
+/**
+  * @brief  Main system loop using layered architecture
+  * @retval None
+  */
+static void System_Loop(void)
+{
+    static uint32_t last_report_time = 0;
+    uint32_t current_time = HAL_GetTick();
+
+    /* 1. Update breathe application (generates brightness value) */
+    Breathe_App_Tick(current_time);
+
+    /* 2. Update LED brightness via service layer */
+    uint8_t brightness = Breathe_App_GetBrightness();
+    PWM_Service_SetDuty(brightness);
+
+    /* 3. Periodic status report every 5 seconds */
+    if ((current_time - last_report_time) >= 5000) {
+        last_report_time = current_time;
+
+        LOG_Service_ReportStatus(
+            Breathe_App_GetPhaseString(),
+            brightness,
+            Breathe_App_GetStep()
+        );
+    }
+
+    /* 4. Small delay to prevent busy-waiting */
+    HAL_Delay(1);
+}
+
+/**
+  * @brief  TIM2 interrupt handler - delegates to driver layer
+  * @retval None
+  */
+void TIM2_IRQHandler(void)
+{
+    TIM_Driver_IRQHandler();
+}
 
 /* USER CODE END 4 */
 

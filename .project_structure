@@ -1,0 +1,44 @@
+# 项目目录结构规范（强制）
+
+## 架构分层目录
+
+本工程使用以下目录结构，AI生成代码时必须严格遵守：
+
+```
+Core/
+├── App/          # 应用层 - 纯业务逻辑
+│   └── *.c, *.h
+├── Service/      # 服务层 - 硬件功能抽象
+│   └── *.c, *.h
+├── Driver/       # 驱动层 - 直接操作寄存器
+│   └── *.c, *.h
+├── Src/          # CubeMX生成代码
+├── Inc/          # CubeMX生成头文件
+```
+
+## 禁止事项
+
+- ❌ 禁止创建 USER 文件夹存放分层代码
+- ❌ 禁止创建 Middleware/Application 等其他分层目录
+- ❌ 禁止把 App/Service/Driver 放在其他任何位置
+
+## 必须遵守
+
+- ✅ 所有新增模块必须放入 Core/App、Core/Service 或 Core/Driver
+- ✅ 保持现有文件引用路径不变
+- ✅ Keil工程中的Include Path已配置为 Core/Inc、Core/Driver、Core/Service、Core/App
+
+## 违规后果
+
+如果AI把代码生成到USER或其他位置：
+1. build/flash skill 将无法找到文件
+2. 编译会失败
+3. 需要手动迁移代码
+
+## 正确示例
+
+新增LED驱动：
+- ✅ Core/Driver/led_driver.c
+- ❌ USER/Driver/led_driver.c
+- ❌ driver/led_driver.c
+- ❌ led_driver.c (放在根目录)
