@@ -340,7 +340,7 @@
               <MiscControls />
               <Define>USE_HAL_DRIVER,STM32F103xB</Define>
               <Undefine />
-              <IncludePath>../Core/Inc;../Core/Driver;../Core/Service;../Core/App;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include</IncludePath>
+              <IncludePath>../Core/Inc;../Driver;../Service;../App;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -502,17 +502,17 @@
             <File>
               <FileName>gpio_driver.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/Driver/gpio_driver.c</FilePath>
+              <FilePath>../Driver/gpio_driver.c</FilePath>
             </File>
             <File>
               <FileName>tim_driver.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/Driver/tim_driver.c</FilePath>
+              <FilePath>../Driver/tim_driver.c</FilePath>
             </File>
             <File>
               <FileName>uart_driver.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/Driver/uart_driver.c</FilePath>
+              <FilePath>../Driver/uart_driver.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -522,17 +522,17 @@
             <File>
               <FileName>led_service.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/Service/led_service.c</FilePath>
+              <FilePath>../Service/led_service.c</FilePath>
             </File>
             <File>
               <FileName>pwm_service.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/Service/pwm_service.c</FilePath>
+              <FilePath>../Service/pwm_service.c</FilePath>
             </File>
             <File>
               <FileName>log_service.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/Service/log_service.c</FilePath>
+              <FilePath>../Service/log_service.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -542,7 +542,7 @@
             <File>
               <FileName>breathe_app.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/App/breathe_app.c</FilePath>
+              <FilePath>../App/breathe_app.c</FilePath>
             </File>
           </Files>
         </Group>

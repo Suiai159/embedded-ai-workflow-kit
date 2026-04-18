@@ -24,5 +24,5 @@ validation:
 # 报告配置
 report:
   format: "markdown"     # markdown/json/html
-  output_path: "./verify_report.md"
+  output_path: "./reports/verify_report.md"
   include_diff: true     # 报告中包含代码修改diff

@@ -21,9 +21,9 @@ if sys.platform == 'win32':
 PROJECT_LOG = Path("PROJECT_LOG.md")
 BUILD_LOG = Path("tools/build_log.txt")
 REPORT_FILES = {
-    "code_review": Path("code_review_report.md"),
-    "verify": Path("verify_report.md"),
-    "check_req": Path("check_req_report.md"),
+    "code_review": Path("reports/code_review_report.md"),
+    "verify": Path("reports/verify_report.md"),
+    "check_req": Path("reports/check_req_report.md"),
 }
 
 # ============================================================
@@ -145,9 +145,9 @@ def check_code_review():
 
 def check_driver_state(name):
     """检查 driver-dev 任务的当前状态"""
-    driver_c = Path(f"Core/Driver/{name}_driver.c")
-    driver_h = Path(f"Core/Driver/{name}_driver.h")
-    test_c = Path(f"Core/Test/{name}_driver_test.c")
+    driver_c = Path(f"Driver/{name}_driver.c")
+    driver_h = Path(f"Driver/{name}_driver.h")
+    test_c = Path(f"Test/{name}_driver_test.c")
 
     if not driver_c.exists():
         return "missing", "驱动源文件不存在"
@@ -209,7 +209,7 @@ def determine_next_step():
             if review_status == "none":
                 return {
                     "action": "code-reviewer",
-                    "args": f"Core/Driver/{name}_driver.c Core/Test/{name}_driver_test.c",
+                    "args": f"Driver/{name}_driver.c Test/{name}_driver_test.c",
                     "reason": "驱动已生成，需要代码审查",
                     "task": task
                 }

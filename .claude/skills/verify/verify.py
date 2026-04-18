@@ -34,8 +34,9 @@ class ValidationResult:
 class ValidationController:
     """验证流程控制器"""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], single_run: bool = False):
         self.config = config
+        self.single_run = single_run
         self.parser = RequirementParser()
         self.executor = SerialTestExecutor(config.get('serial', {}))
         self.comparator = OutputComparator()
@@ -117,6 +118,10 @@ class ValidationController:
             print(f"  ✗ {len(failed_tests)} 个测试用例失败")
 
             # 6. 是否尝试修复
+            if self.single_run:
+                print("\n[6/7] 单次运行模式，跳过自动修复，交由外部调度器处理")
+                break
+
             if self.retry_count >= self.max_retries or not self.auto_fix:
                 print("\n[6/7] 达到最大重试次数或自动修复已禁用")
                 break
@@ -144,7 +149,7 @@ class ValidationController:
         """编译项目"""
         try:
             result = subprocess.run(
-                ['bash', 'USER/Build/build_keil.sh'],
+                ['bash', 'tools/build_keil.sh'],
                 capture_output=True,
                 text=True,
                 timeout=120
@@ -161,7 +166,7 @@ class ValidationController:
         """烧录固件"""
         try:
             result = subprocess.run(
-                ['bash', 'USER/Build/flash_keil.sh'],
+                ['bash', 'tools/flash_keil.sh'],
                 capture_output=True,
                 text=True,
                 timeout=60
@@ -321,7 +326,7 @@ def load_config(project_root: Path) -> Dict[str, Any]:
             'auto_fix': True,
         },
         'report': {
-            'output_path': './verify_report.md'
+            'output_path': './reports/verify_report.md'
         }
     }
 
@@ -343,15 +348,17 @@ def main():
     parser.add_argument('--req', default='需求.md', help='需求文档路径')
     parser.add_argument('--max-retries', type=int, help='最大重试次数')
     parser.add_argument('--test-only', action='store_true', help='只测试不修复')
+    parser.add_argument('--single-run', action='store_true', help='单次运行，失败不重试，用于外部调度器控制循环')
     parser.add_argument('--port', help='串口端口')
-    parser.add_argument('--report', default='verify_report.md', help='报告输出路径')
+    parser.add_argument('--report', default='reports/verify_report.md', help='报告输出路径')
 
     args = parser.parse_args()
 
     # 查找项目根目录
     project_root = Path.cwd()
     while project_root != project_root.parent:
-        if (project_root / 'USER' / 'Build').exists():
+        if (project_root / 'tools' / 'build_keil.sh').exists() or \
+           (project_root / 'MDK-ARM' / 'very_test.uvprojx').exists():
             break
         project_root = project_root.parent
 
@@ -367,7 +374,7 @@ def main():
         config['serial']['port'] = args.port
 
     # 执行验证
-    controller = ValidationController(config)
+    controller = ValidationController(config, single_run=args.single_run)
     result = controller.run(args.req)
 
     # 生成报告

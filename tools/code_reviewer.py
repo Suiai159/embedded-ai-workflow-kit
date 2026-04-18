@@ -503,7 +503,7 @@ def main():
     print(report)
 
     # 保存报告
-    report_path = Path("code_review_report.md")
+    report_path = Path("reports/code_review_report.md")
     with open(report_path, 'w', encoding='utf-8') as f:
         f.write(report)
     print(f"\n报告已保存至: {report_path}")

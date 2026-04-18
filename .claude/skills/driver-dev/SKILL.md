@@ -56,11 +56,11 @@ user-invocable: true
      □ 状态机或工作模式
         ↓
 2. 生成 Driver 层代码
-   - Core/Driver/xxx_driver.h   (标准接口头文件)
-   - Core/Driver/xxx_driver.c   (纯 HAL 封装，不反向依赖)
+   - Driver/xxx_driver.h   (标准接口头文件)
+   - Driver/xxx_driver.c   (纯 HAL 封装，不反向依赖)
         ↓
 3. 生成测试代码
-   - Core/Test/xxx_driver_test.c (包含 xxx_Driver_Test() 函数)
+   - Test/xxx_driver_test.c (包含 xxx_Driver_Test() 函数)
         ↓
 4. 自动注册 Keil 工程
    - 运行: python tools/driver_dev.py --name xxx --add-to-keil
@@ -89,7 +89,7 @@ user-invocable: true
 
 ### 测试代码模板
 
-测试代码固定放在 `Core/Test/xxx_driver_test.c`，包含：
+测试代码固定放在 `Test/xxx_driver_test.c`，包含：
 
 ```c
 void xxx_Driver_Test(void);
@@ -155,9 +155,9 @@ agent:
 
 ### Step 2: 代码生成
 由主 Agent 直接生成以下文件：
-- `Core/Driver/{{name}}_driver.h`
-- `Core/Driver/{{name}}_driver.c`
-- `Core/Test/{{name}}_driver_test.c`
+- `Driver/{{name}}_driver.h`
+- `Driver/{{name}}_driver.c`
+- `Test/{{name}}_driver_test.c`
 
 生成前先执行：
 ```bash

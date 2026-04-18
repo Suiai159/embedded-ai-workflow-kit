@@ -5,28 +5,33 @@
 本工程使用以下目录结构，AI生成代码时必须严格遵守：
 
 ```
-Core/
+very_test/
 ├── App/          # 应用层 - 纯业务逻辑
 │   └── *.c, *.h
 ├── Service/      # 服务层 - 硬件功能抽象
 │   └── *.c, *.h
 ├── Driver/       # 驱动层 - 直接操作寄存器
 │   └── *.c, *.h
-├── Src/          # CubeMX生成代码
-├── Inc/          # CubeMX生成头文件
+├── Test/         # 测试代码（持久保留）
+│   └── *.c, *.h
+├── Core/         # CubeMX 生成代码（纯平台代码）
+│   ├── Src/
+│   └── Inc/
+├── Drivers/      # HAL 库
+└── MDK-ARM/      # Keil 工程
 ```
 
 ## 禁止事项
 
 - ❌ 禁止创建 USER 文件夹存放分层代码
 - ❌ 禁止创建 Middleware/Application 等其他分层目录
-- ❌ 禁止把 App/Service/Driver 放在其他任何位置
+- ❌ 禁止把 App/Service/Driver/Test 放在其他任何位置
 
 ## 必须遵守
 
-- ✅ 所有新增模块必须放入 Core/App、Core/Service 或 Core/Driver
+- ✅ 所有新增模块必须放入 App/、Service/、Driver/ 或 Test/
 - ✅ 保持现有文件引用路径不变
-- ✅ Keil工程中的Include Path已配置为 Core/Inc、Core/Driver、Core/Service、Core/App
+- ✅ Keil工程中的Include Path已配置为 Core/Inc、Driver、Service、App
 
 ## 违规后果
 
@@ -38,7 +43,7 @@ Core/
 ## 正确示例
 
 新增LED驱动：
-- ✅ Core/Driver/led_driver.c
+- ✅ Driver/led_driver.c
 - ❌ USER/Driver/led_driver.c
-- ❌ driver/led_driver.c
+- ❌ Core/Driver/led_driver.c  (已迁移到 Driver/led_driver.c)
 - ❌ led_driver.c (放在根目录)

@@ -1,7 +1,7 @@
 ---
 schema: skill-1.0
 name: verify
-description: 验证嵌入式代码是否满足需求 - 先检查一致性，再编译烧录，最后通过串口测试自动验证
+description: 验证嵌入式代码是否满足需求 - 先检查一致性，再编译烧录，最后通过串口测试自动验证，测试失败时调用AI Agent智能修复
 parameters:
   - name: req_file
     type: string
@@ -21,46 +21,100 @@ parameters:
 user-invocable: true
 ---
 
-# /verify — 验证嵌入式代码
+# /verify — 验证嵌入式代码（AI增强闭环版）
 
-**完整验证流程**：需求一致性检查 → 编译 → 烧录 → 串口测试 → 自动修复（最多3次）。
+**完整验证流程**：需求一致性检查 → 编译 → 烧录 → 串口测试 → **AI Agent 自动修复** → 循环验证（最多 `max_retries` 次）。
 
 ## 使用方式
 
 ```
-/verify                          # 完整验证流程
+/verify                          # 完整验证+AI自动修复流程
 /verify --req ./需求.md          # 指定需求文档路径
 /verify --max-retries 5          # 设置最大重试次数
-/verify --test-only              # 只测试不自动修复
+/verify --test-only              # 只测试，失败时不调用AI修复
 ```
 
 ## 执行流程
 
-### 1. 解析需求文档
-- 读取 `需求.md` 或指定路径的需求文件
-- 提取测试用例（输入命令 + 预期输出）
+### 模式 A：test-only（单次测试，不自动修复）
 
-### 2. 编译项目
-- 调用 `build` skill 编译当前Keil项目（**build 会自动执行 check-req**）
-- 编译失败则停止并报告
+1. 执行：`python .claude/skills/verify/verify.py --test-only --req <req_file>`
+2. 读取结果和 `reports/verify_report.md`
+3. 展示报告，结束
 
-### 3. 烧录固件
-- 调用 `flash` skill 烧录到STM32
-- 烧录失败则停止并报告
+### 模式 B：完整 AI 闭环（默认）
 
-### 5. 串口测试
-- 自动检测或连接指定串口
-- 按测试用例顺序发送命令
-- 捕获输出并与预期比对
-- 支持多种匹配模式：精确匹配、包含匹配、正则匹配、数值范围
+**步骤 1：单次验证**
+- 运行：`python .claude/skills/verify/verify.py --single-run --max-retries 0 --req <req_file> [--port <port>]`
+- `verify.py` 内部执行：解析需求 → 编译 → 烧录 → 串口测试 → 生成 `reports/verify_report.md`
 
-### 6. 结果处理
-- **全部通过**：生成验证报告，结束
-- **存在失败**：分析错误原因 → 自动修复代码 → 回到步骤3（最多3次）
+**步骤 2：结果判断**
+- **Exit code == 0**：验证通过
+  - 读取 `reports/verify_report.md`
+  - 向用户展示成功结果和测试统计
+  - 结束
+
+- **Exit code != 0**：验证失败，进入 AI 修复循环
+
+**步骤 3：AI 修复循环**
+
+```
+retry_count = 0
+max_retries = <参数值，默认 3>
+
+while retry_count < max_retries:
+    1. 读取 reports/verify_report.md，提取失败的测试用例详情
+    2. 读取相关代码文件（至少包括以下路径）：
+       - Core/Src/main.c
+       - App/*.c, App/*.h
+       - Service/*.c, Service/*.h
+       - Driver/*.c, Driver/*.h
+       - 需求文档（req_file）
+    3. 调用 Agent 进行智能修复
+
+       Agent Prompt 模板：
+       ─────────────────────────────────────────
+       你是一个资深的嵌入式工程师，负责修复一个 STM32 项目的测试失败问题。
+
+       ## 项目架构规则（必须严格遵守）
+       - 四层架构：App → Service → Driver → HAL
+       - 禁止反向依赖
+       - 只修复导致测试失败的 bug，不添加新功能
+       - 修改必须最小化
+
+       ## 测试失败信息
+       <从 reports/verify_report.md 提取的失败用例：id, input, expected, actual, error>
+
+       ## 相关代码
+       <附上读取到的代码文件内容>
+
+       ## 需求文档
+       <附上需求文档关键内容>
+
+       请分析失败原因，使用 Read 和 Edit 工具修改代码使其通过测试。
+       修改完成后返回：修复的文件、修改点简述。
+       ─────────────────────────────────────────
+
+    4. Agent 返回后，再次运行 verify.py --single-run
+    5. 如果通过：展示成功结果，结束
+    6. 如果仍然失败：retry_count += 1，继续循环
+
+    if retry_count >= max_retries:
+        停止循环，向用户报告最终失败结果
+        展示 reports/verify_report.md 中的详细错误
+        给出下一步建议（手动检查硬件/修改需求/继续调试）
+```
+
+## Agent 调用规范
+
+当需要调用 Agent 时，使用 `Agent` tool：
+- **subagent_type**: `general-purpose`
+- **prompt**: 按上述模板构建，包含完整的失败信息和代码内容
+- **description**: "修复嵌入式测试失败"
 
 ## 测试用例格式
 
-需求文档中需包含测试用例章节：
+需求文档中需包含测试用例章节，格式如下：
 
 ```markdown
 ## 测试用例
@@ -70,22 +124,9 @@ user-invocable: true
 - **预期输出**: `LED is ON`
 - **匹配模式**: contains
 - **超时**: 1000ms
-
-### TC002: 温度读取测试
-- **输入**: `GET TEMP`
-- **预期输出**: `TEMP:20-30`
-- **匹配模式**: range
-- **超时**: 500ms
 ```
 
-## 匹配模式说明
-
-| 模式 | 说明 | 示例 |
-|------|------|------|
-| `exact` | 完全匹配 | `"LED ON"` |
-| `contains` | 包含子串 | `"LED"` 匹配 `"LED is ON"` |
-| `regex` | 正则匹配 | `"TEMP:(\d+)"` |
-| `range` | 数值范围 | `"20-30"` 匹配 `"25"` |
+匹配模式支持：`exact`（精确）、`contains`（包含）、`regex`（正则）、`range`（数值范围）。
 
 ## 配置文件
 
@@ -93,7 +134,7 @@ user-invocable: true
 
 ```yaml
 serial:
-  port: "COM3"          # auto或指定端口
+  port: "COM3"          # auto 或指定端口
   baudrate: 115200
 
 test:
@@ -102,38 +143,19 @@ test:
 
 validation:
   max_retries: 3
-  auto_fix: true
 ```
 
 ## 验证报告
 
-验证完成后生成报告 `verify_report.md`：
+验证完成后生成 `reports/verify_report.md`：
 - 测试用例执行结果
 - 通过/失败统计
 - 失败原因分析
-- 代码修改历史（如有自动修复）
+- 自动修复历史记录
 
 ## 依赖
 
 - Python 3.8+
-- pyserial 库
+- pyserial, pyyaml
 - Keil MDK（编译）
 - ST-Link/J-Link（烧录）
-
-## 完整执行步骤
-
-1. **需求一致性检查**：调用 `/check-req`，不一致则停止
-2. **解析需求**：读取并解析需求文档中的测试用例
-3. **编译检查**：执行构建，检查是否生成hex文件
-4. **烧录固件**：下载到STM32目标板
-5. **串口连接**：打开串口，复位目标板
-6. **执行测试**：遍历所有测试用例
-   - 发送输入命令
-   - 等待预期输出（带超时）
-   - 记录实际输出
-7. **结果比对**：比对实际输出与预期
-8. **失败处理**：
-   - 分析错误类型（无输出/格式错/数值错/超时）
-   - 尝试自动修复代码
-   - 重试编译烧录测试（最多3次）
-9. **生成报告**：输出验证结果到 `verify_report.md`

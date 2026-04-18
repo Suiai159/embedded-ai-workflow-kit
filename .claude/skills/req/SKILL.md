@@ -80,11 +80,11 @@ parameters:
 
 | 层级 | 目录 | 禁止位置 |
 |------|------|----------|
-| App | `Core/App/` | ❌ `USER/App/` |
-| Service | `Core/Service/` | ❌ `USER/Service/` |
-| Driver | `Core/Driver/` | ❌ `USER/Driver/` |
+| App | `App/` | ❌ `USER/App/` |
+| Service | `Service/` | ❌ `USER/Service/` |
+| Driver | `Driver/` | ❌ `USER/Driver/` |
 
-⚠️ **重要**：所有新增模块必须放入 `Core/` 下，保持 Keil Include Path 不变。
+⚠️ **重要**：所有新增模块必须放入对应层级目录下，保持 Keil Include Path 不变。
 
 ## 1. 数据采集部分
 | 项目 | 说明 |

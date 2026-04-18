@@ -17,8 +17,8 @@ if sys.platform == 'win32':
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 PROJECT_FILE = Path("MDK-ARM/very_test.uvprojx")
-DRIVER_DIR = Path("Core/Driver")
-TEST_DIR = Path("Core/Test")
+DRIVER_DIR = Path("Driver")
+TEST_DIR = Path("Test")
 
 def ensure_directories():
     """确保目录存在"""
@@ -95,11 +95,11 @@ def add_to_keil(driver_name):
     # 驱动文件 -> Driver Group
     driver_c = f"{driver_name}_driver.c"
     driver_h = f"{driver_name}_driver.h"
-    driver_c_path = f"../Core/Driver/{driver_c}"
+    driver_c_path = f"../Driver/{driver_c}"
 
     # 测试文件 -> Test Group (或新建)
     test_c = f"{driver_name}_driver_test.c"
-    test_c_path = f"../Core/Test/{test_c}"
+    test_c_path = f"../Test/{test_c}"
 
     modified = False
 
