@@ -45,7 +45,7 @@ breathe_app.c 调用 GPIO_Driver_WritePin()
 
 | 层级 | 职责 | 禁止事项 | 检查方法 |
 |------|------|----------|----------|
-| **App** | 纯业务逻辑、算法、状态机 | 包含任何硬件头文件 | grep -l "stm32" Core/App/*.c |
+| **App** | 纯业务逻辑、算法、状态机 | 包含任何硬件头文件 | grep -l "stm32" App/*.c |
 | **Service** | 硬件功能抽象、资源协调 | 直接操作寄存器 | 检查是否只调用Driver层API |
 | **Driver** | 寄存器操作、中断处理 | 调用Service/App层 | 检查头文件包含列表 |
 | **HAL** | CubeMX标准库 | 手动修改 | 仅通过MX_函数调用 |
@@ -122,10 +122,10 @@ if (mode == LED_MODE_BREATHE) {
 
 ```bash
 # 检查App层是否违规包含硬件头文件
-grep -r "stm32f1xx\|stm32f103" Core/App/
+grep -r "stm32f1xx\|stm32f103" App/
 
 # 检查Driver层是否包含上层头文件（应该是干净的）
-grep -r "service\|app" Core/Driver/ --include="*.c"
+grep -r "service\|app" Driver/ --include="*.c"
 
 # 检查重复初始化模式
 grep -r "_Init()" Core/ --include="*.c" | grep -v "System_Init\|MX_"

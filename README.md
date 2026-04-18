@@ -73,10 +73,13 @@ git init
 │   └── dev_orchestrator.py # 项目总控脚本
 ├── .claude/skills/    # Claude Code Skill 定义
 ├── CLAUDE.md          # 项目开发规范（AI 必读）
-├── ARCHITECTURE.md    # 架构规范详解
-├── WORKFLOW.md        # 工作流程说明
+├── docs/              # 规范文档与参考资料
+│   ├── ARCHITECTURE.md
+│   ├── WORKFLOW.md
+│   └── 外设驱动花名册.md
 ├── PROJECT_LOG.md     # 项目进度日志
 ├── 需求.md             # 当前项目需求文档
+├── reports/           # 临时报告输出
 └── README.md          # 本文件
 ```
 
@@ -144,21 +147,15 @@ git init
 
 1. **保留的规范文件**（必须跟着走）：
    - `CLAUDE.md`
-   - `ARCHITECTURE.md`
-   - `WORKFLOW.md`
+   - `docs/` 目录
    - `.claude/skills/` 目录
    - `tools/` 目录
 
 2. **需要清空的文件**：
    - `PROJECT_LOG.md`
    - `需求.md`
-   - `ARCH_PLAN_DESIGN.md`
-   - `Core/App/`、`Core/Service/`、`Core/Driver/`、`Core/Test/` 下的业务代码
-
-3. **需要修改的配置**：
-   - Keil 工程名和路径
-   - `MEMORY.md` 中的项目定位
-   - `tools/build_keil.sh` 和 `flash_keil.sh` 中的工程路径（如有变化）
+   - `docs/ARCH_PLAN_DESIGN.md`
+   - `App/`、`Service/`、`Driver/`、`Test/` 下的业务代码
 
 ---
 

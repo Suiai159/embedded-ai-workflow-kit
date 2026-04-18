@@ -96,7 +96,7 @@ Breathe_App_Init();    // 3. App层最后
 - [ ] 确认硬件资源未被占用
 - [ ] 在 `System_Init()` 中按顺序添加初始化
 
-详细规范参见：[ARCHITECTURE.md](ARCHITECTURE.md)
+详细规范参见：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ### 目录结构规范（复制工程时必须遵守）
 
@@ -106,13 +106,13 @@ Breathe_App_Init();    // 3. App层最后
 
 | 层级 | 目录 | 示例 |
 |------|------|------|
-| App | `Core/App/` | `Core/App/breathe_app.c` |
-| Service | `Core/Service/` | `Core/Service/led_service.c` |
-| Driver | `Core/Driver/` | `Core/Driver/gpio_driver.c` |
+| App | `App/` | `App/breathe_app.c` |
+| Service | `Service/` | `Service/led_service.c` |
+| Driver | `Driver/` | `Driver/gpio_driver.c` |
 
 **强制规则**：
 - ❌ **禁止**创建 `USER` 文件夹存放分层代码
-- ❌ **禁止**把代码放在 `Core/` 以外的其他位置
+- ❌ **禁止**把 `App/Service/Driver/Test` 放进 `Core/` 内（Core/ 只放 CubeMX 生成代码）
 - ✅ 必须保持 Keil 工程的 Include Path 不变
 
 **如果AI错误地把代码生成到USER或其他位置：**
@@ -176,9 +176,88 @@ Breathe_App_Init();    // 3. App层最后
 - 🟡 警告：建议修复
 - 💡 建议：可选优化
 
-详细流程参见：[WORKFLOW.md](WORKFLOW.md)
+详细流程参见：[docs/WORKFLOW.md](docs/WORKFLOW.md)
 
 ---
+
+## 项目日志
+
+**文件**：`PROJECT_LOG.md`
+
+### 记录范围
+
+| ✅ 应该记录 | ❌ 不记录 |
+|-----------|----------|
+| 需求变更及原因 | 工具配置（VS Code 快捷键等） |
+| 架构决策及取舍 | 环境搭建步骤 |
+| 关键 bug 及修复思路 | 临时调试手段 |
+| 模块开发里程碑 | 纯格式/排版调整 |
+| 阻塞项及等待原因 | |
+
+### 规则
+
+- **按任务块记录**：每完成一个可交付的功能/修复，在 `PROJECT_LOG.md` 写一行总结
+- **必须记录「问题 & 解决」**：踩过的坑要记下来，避免重复踩
+- **提交前 commit**：`PROJECT_LOG.md` 随代码一起提交，纳入 git 版本管理
+
+## 工程演进日志
+
+**文件**：`EVOLUTION.md`
+
+### 记录范围
+
+| ✅ 应该记录 | ❌ 不记录 |
+|-----------|----------|
+| Skill 的增删改、功能迭代 | 日常开发任务（已在 PROJECT_LOG.md） |
+| 目录结构变更、文件迁移 | 模块内部实现细节 |
+| 工具链、脚本配置更新 | 临时调试手段 |
+| 架构分层规则调整 | |
+
+### 与 PROJECT_LOG.md 的区别
+
+- `PROJECT_LOG.md` → 日常开发任务（修 bug、写模块、验证结果）
+- `EVOLUTION.md` → 工程骨架的结构性变更（新增目录、Skill 迭代、规范重写）
+
+### 类型标记
+
+| 标记 | 含义 |
+|------|------|
+| `[skill]` | Skill 增删改 |
+| `[structure]` | 目录/文件结构变更 |
+| `[tool]` | 脚本、工具链、配置更新 |
+| `[doc]` | 规范文档合并、重写 |
+| `[arch]` | 架构规则调整 |
+
+## 审查报告输出规范
+
+**所有审查类 Skill 的报告必须输出到 `reports/` 目录。**
+
+| Skill | 报告文件 |
+|-------|---------|
+| `/check-req` | `reports/check_req_report.md` |
+| `/code-reviewer` | `reports/code_review_report.md` |
+| `/verify` | `reports/verify_report.md` |
+
+- 报告文件不纳入 git 跟踪（可加入 `.gitignore`）
+- 各 Skill 脚本和 Skill 定义中的默认路径必须指向 `reports/`
+- `dev_orchestrator.py` 读取报告时同样从 `reports/` 读取
+
+## Git Commit 粒度（改 bug 时特别重要）
+
+**核心原则：每次有进展就 commit，不要攒到最后。**
+
+```
+❌ 错误：修了3小时，最后一次性 commit "fix bugs"
+✅ 正确：
+   commit 1: "fix: 修复 UART 接收缓冲区越界（初步）"
+   commit 2: "fix: 处理边界 case，消除偶发丢包"
+   commit 3: "fix: 最终验证通过，UART 接收稳定"
+```
+
+**为什么这样？**
+- 改崩了可以 `git checkout HEAD~1` 回退到上一个**能用的中间状态**
+- `git log` 能还原完整的调试过程，第二天回来不用从头再来
+- 配合 `PROJECT_LOG.md` 的「问题 & 解决」栏，能瞬间想起当时思路
 
 ## 需求文档
 
