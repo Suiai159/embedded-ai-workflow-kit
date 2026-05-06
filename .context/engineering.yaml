@@ -134,12 +134,17 @@ ai_rules:
     - .context/runtime.yaml
     - .agents/rules/entrypoints.md
     - .agents/rules/git.md
+    - .agents/rules/logging.md
     - .workflow/project.yaml
     - "\u9700\u6c42.md"
   git_required:
     - run git status before editing
     - stage only task-owned changes
-    - commit before final handoff unless the user explicitly says not to commit
+    - commit after validation passes unless the user explicitly says not to commit
+  logging_required:
+    - update PROJECT_LOG.md for project work, verification, blockers, or next steps
+    - update EVOLUTION.md for framework, rule, Skill, tool, layout, or architecture policy changes
+    - stage log updates together with the changes they explain
   do_not_guess:
     - hardware pin polarity
     - timer clock and frequency math

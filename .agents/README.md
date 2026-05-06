@@ -19,7 +19,8 @@ This directory is the agent-neutral home for AI workflow assets.
 - Keep deterministic actions in `tools/`; Skills should describe workflow and call tools.
 - Keep project facts in `.context/` and tool/layout config in `.workflow/project.yaml`.
 - Do not put build, flash, verify, or review reports here. Reports belong in `reports/`.
-- Agents that modify files must commit those changes unless the user explicitly says not to.
+- Agents that modify files must update the appropriate log files.
+- Agents should stage coherent checkpoints, validate them, then commit when usable unless the user explicitly says not to.
 
 Useful commands:
 

@@ -57,7 +57,7 @@ def validate(root: Path) -> Tuple[List[str], List[str]]:
     if not rules.exists():
         errors.append("missing canonical rules directory `.agents/rules`")
     else:
-        for required in ("entrypoints.md", "git.md"):
+        for required in ("entrypoints.md", "git.md", "logging.md"):
             if not (rules / required).exists():
                 errors.append(f"missing agent rule `.agents/rules/{required}`")
     if not canonical.exists():

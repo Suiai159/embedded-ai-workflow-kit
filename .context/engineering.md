@@ -66,8 +66,9 @@ Before changing code, read:
 5. `.context/runtime.yaml`
 6. `.agents/rules/entrypoints.md`
 7. `.agents/rules/git.md`
-8. `.workflow/project.yaml`
-9. `需求.md`
+8. `.agents/rules/logging.md`
+9. `.workflow/project.yaml`
+10. `需求.md`
 
 Conversation history is not a substitute for these files.
 
@@ -77,7 +78,16 @@ Any Agent that changes files must use git as part of the work:
 
 1. Run `python tools/git_guard.py status` before editing.
 2. Review diffs after editing.
-3. Stage only task-owned files.
-4. Commit before final handoff unless the user explicitly says not to commit.
+3. Stage only task-owned files as a checkpoint.
+4. Commit after validation passes unless the user explicitly says not to commit.
 
 The detailed rule is `.agents/rules/git.md`.
+
+## Logging Rule
+
+Any Agent that changes files must update durable logs:
+
+- `PROJECT_LOG.md` for daily project work, validation, blockers, and next actions.
+- `EVOLUTION.md` for framework, rule, Skill, tool, layout, or architecture-policy changes.
+
+The detailed rule is `.agents/rules/logging.md`.

@@ -83,6 +83,32 @@ def command_pre_final(root: Path) -> int:
     return 1
 
 
+def command_stage(root: Path, paths: List[str]) -> int:
+    if not paths:
+        print("Error: pass explicit --paths so unrelated user changes are not staged.", file=sys.stderr)
+        return 1
+
+    missing = []
+    for path in paths:
+        if (root / path).exists():
+            continue
+        tracked = run_git(root, ["ls-files", "--error-unmatch", path])
+        if tracked.returncode != 0:
+            missing.append(path)
+    if missing:
+        print("Error: stage path does not exist: " + ", ".join(missing), file=sys.stderr)
+        return 1
+
+    run_git(root, ["add", "--", *paths], check=True)
+    staged = run_git(root, ["diff", "--cached", "--name-only"], check=True).stdout.strip()
+    if staged:
+        print("Staged checkpoint:")
+        print(staged)
+    else:
+        print("No staged changes.")
+    return 0
+
+
 def command_commit(root: Path, message: str, paths: List[str]) -> int:
     if not paths:
         print("Error: pass explicit --paths so unrelated user changes are not staged.", file=sys.stderr)
@@ -126,6 +152,8 @@ def main() -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("status", help="Show short git status")
     sub.add_parser("pre-final", help="Fail if uncommitted changes remain")
+    stage_parser = sub.add_parser("stage", help="Stage explicit task-owned paths as a checkpoint")
+    stage_parser.add_argument("--paths", nargs="+", required=True, help="Task-owned paths to stage")
     commit_parser = sub.add_parser("commit", help="Stage explicit paths and commit")
     commit_parser.add_argument("--message", required=True, help="Commit message")
     commit_parser.add_argument("--paths", nargs="+", required=True, help="Task-owned paths to stage")
@@ -136,6 +164,8 @@ def main() -> int:
         return command_status(root)
     if args.command == "pre-final":
         return command_pre_final(root)
+    if args.command == "stage":
+        return command_stage(root, args.paths)
     if args.command == "commit":
         return command_commit(root, args.message, args.paths)
 

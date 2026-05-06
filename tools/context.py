@@ -215,6 +215,10 @@ def validate(root: Path) -> Tuple[List[str], List[str]]:
     if git_guard and not (root / str(git_guard)).exists():
         errors.append(f"version: git guard script missing: {git_guard}")
 
+    log_guard = cfg_get(data["version"], "critical_scripts.log_guard")
+    if log_guard and not (root / str(log_guard)).exists():
+        errors.append(f"version: log guard script missing: {log_guard}")
+
     for path_value in cfg_get(data["version"], "generated_code_boundaries.cube_generated", []):
         if not path_exists_or_external(root, path_value):
             warnings.append(f"version: generated boundary path not found: {path_value}")

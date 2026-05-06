@@ -40,6 +40,7 @@ critical_scripts:
   workflow_cli: tools/workflow.py
   context_cli: tools/context.py
   git_guard: tools/git_guard.py
+  log_guard: tools/log_guard.py
   dev_orchestrator: tools/dev_orchestrator.py
   driver_dev: tools/driver_dev.py
   inject_test_mode: tools/inject_test_mode.py

@@ -14,9 +14,10 @@ Before changing code, read or summarize these sources in order:
 4. `.context/runtime.yaml`
 5. `.agents/rules/entrypoints.md`
 6. `.agents/rules/git.md`
-7. `.workflow/project.yaml`
-8. `需求.md`
-9. Relevant source files
+7. `.agents/rules/logging.md`
+8. `.workflow/project.yaml`
+9. `需求.md`
+10. Relevant source files
 
 Run this first when possible:
 
@@ -25,6 +26,7 @@ python tools/context.py validate
 python tools/context.py summary
 python tools/workflow.py verify-config
 python tools/git_guard.py status
+python tools/log_guard.py status
 ```
 
 ## Agent-Neutral Contract
@@ -35,7 +37,8 @@ python tools/git_guard.py status
 - Use `tools/context.py touch-runtime` after build, flash, or verify evidence changes.
 - Write all reports and logs to fixed paths under `reports/`; overwrite current reports by default instead of creating timestamped files.
 - Keep generated/vendor areas (`Core/`, `Drivers/`, `.ioc`, tool project files) separate from hand-maintained code unless the task explicitly targets generated code.
-- Any Agent that changes files must commit task-owned changes before final handoff unless the user explicitly says not to commit. See `.agents/rules/git.md`.
+- Any Agent that changes files must update `PROJECT_LOG.md` and/or `EVOLUTION.md`. See `.agents/rules/logging.md`.
+- Any Agent that changes files must stage coherent task-owned checkpoints, validate them, then commit the usable checkpoint unless the user explicitly says not to commit. See `.agents/rules/git.md`.
 
 ## Current Workflow Adapter
 

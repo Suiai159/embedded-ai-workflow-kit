@@ -8,11 +8,13 @@ Any Agent that changes files must:
 
 1. Run `git status --short` before editing and identify pre-existing dirty files.
 2. Avoid reverting or staging unrelated user changes.
-3. After edits, run the relevant validation commands.
-4. Run `git diff` or an equivalent scoped diff review.
-5. Stage only files changed for the current task.
-6. Create a git commit before final handoff, unless the user explicitly says not to commit.
-7. Mention the commit hash and remaining unstaged files in the final response.
+3. After a coherent edit batch, stage only files changed for the current task.
+4. Run the relevant validation commands.
+5. Run `git diff --cached` or an equivalent staged diff review.
+6. Commit only after the staged change is validated and usable.
+7. Mention the commit hash and remaining unrelated dirty files in the final response.
+
+Do not create a commit for every tiny step. Use staged checkpoints while work is in progress, then commit the validated checkpoint.
 
 ## Guard Commands
 
@@ -20,15 +22,17 @@ Use the helper when possible:
 
 ```bash
 python tools/git_guard.py status
+python tools/git_guard.py stage --paths <file-or-dir>...
 python tools/git_guard.py pre-final
 python tools/git_guard.py commit --message "type: concise summary" --paths <file-or-dir>...
 ```
 
-`pre-final` fails while tracked or untracked changes remain outside a commit. If the user explicitly asks to pause before commit, say that clearly and leave the worktree status in the handoff.
+`stage` is the normal checkpoint command during work. `commit` should be used after validation passes. `pre-final` fails while task-owned changes remain outside a commit. If the user explicitly asks to pause before commit, say that clearly and leave the worktree status in the handoff.
 
 ## Commit Rules
 
 - Commit messages should be concise and describe the engineering change.
+- Stage task-owned changes before validation so the candidate checkpoint is explicit.
 - Do not commit generated build artifacts unless they are intentionally tracked project files.
 - Do not stage local settings such as `.claude/settings.local.json`.
 - Do not stage unrelated generated files such as dependency `.d` files unless the task explicitly owns them.

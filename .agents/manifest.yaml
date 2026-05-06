@@ -19,4 +19,5 @@ rules:
   - Use tools/agent_assets.py sync-skills --target claude to refresh compatibility mirrors.
   - Skills describe workflow; deterministic execution belongs in tools/.
   - Project facts belong in .context/, not in agent-specific prompts.
-  - Agents must commit task changes before final handoff unless the user explicitly says not to.
+  - Agents must update PROJECT_LOG.md and/or EVOLUTION.md for meaningful changes.
+  - Agents must stage coherent checkpoints, validate them, then commit when usable unless the user explicitly says not to.

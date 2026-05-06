@@ -16,13 +16,16 @@
 - [structure] 新增 `.agents/rules/`，作为通用 Agent 规则源；根目录 `AGENTS.md`、`CLAUDE.md` 保留为发现入口/兼容入口
 - [tool] 新增 `tools/agent_assets.py`，支持校验 Agent 资产并同步 `.claude/skills/` 兼容镜像
 - [tool] 新增 `tools/git_guard.py`，把修改前 git 状态检查和最终提交要求变成可执行约束
+- [tool] 扩展 `tools/git_guard.py stage`，把“先暂存任务检查点，验证可用后提交”变成可执行流程
+- [tool] 新增 `tools/log_guard.py`，检查 Agent 是否更新 `PROJECT_LOG.md` 和/或 `EVOLUTION.md`
 - [doc] 更新 `README.md`、`CLAUDE.md`、`docs/项目介绍.md`，明确 `.claude/skills/` 只是 Claude/Codex 兼容镜像
 - [doc] 更新 `.context/version.*`、`.context/engineering.md`，把 Agent-neutral 入口纳入上下文事实
 - [arch] 将默认叙事从 “Claude Code Skill 工作流” 调整为 “Agent 工作流 + tools 确定性命令 + 可选 Skill 适配器”
 - [arch] 明确 `App/Service/Driver` 是工程框架不变量，不随主机平台、IDE、工具链或 Agent 变化
 - [arch] 明确工程稳定目录与平台/工具适配目录的边界：`App/Service/Driver/Test/docs/.context/.workflow/.agents/tools/reports` 属于工程本身，`Core/Drivers/MDK-ARM/.vscode/.claude/*.ioc` 属于平台、工具或可选 adapter 边界
 - [tool] 新增 `tools/project_structure.py` 和 `python tools/workflow.py structure`，让 `.project_structure` 从上下文与 workflow 配置一键生成
-- [policy] 规定 Agent 修改文件后必须只暂存本次任务文件并提交，除非用户明确说不要提交
+- [policy] 规定 Agent 修改文件后必须先暂存本次任务文件，验证可用后再提交，除非用户明确说不要提交
+- [policy] 规定 Agent 修改文件后必须更新持久日志：日常进展写 `PROJECT_LOG.md`，框架演进写 `EVOLUTION.md`
 
 ---
 

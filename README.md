@@ -226,15 +226,31 @@ very_test/
 
 ### Git 强制保存
 
-任何 Agent 修改文件后，都必须提交本次任务变更，除非用户明确说不要提交：
+任何 Agent 修改文件后，都必须先暂存本次任务变更，验证可用后再提交，除非用户明确说不要提交：
 
 ```bash
 python tools/git_guard.py status
+python tools/git_guard.py stage --paths <task-owned-files>
 python tools/git_guard.py pre-final
 python tools/git_guard.py commit --message "type: summary" --paths <task-owned-files>
 ```
 
-提交前只暂存本次任务拥有的文件，不能把用户已有改动、本地设置或生成依赖文件混进提交。
+不要每做一步都提交。先暂存本次任务拥有的文件作为检查点，验证可用后再提交；不能把用户已有改动、本地设置或生成依赖文件混进提交。
+
+### 日志强制记录
+
+任何 Agent 修改文件后，都必须更新持久日志：
+
+| 记录位置 | 用途 |
+|----------|------|
+| `PROJECT_LOG.md` | 日常开发进展、验证结果、阻塞项、下一步 |
+| `EVOLUTION.md` | 工程框架、规则、Skill、tools、目录边界等结构演进 |
+
+检查命令：
+
+```bash
+python tools/log_guard.py validate --mode either
+```
 
 ---
 
