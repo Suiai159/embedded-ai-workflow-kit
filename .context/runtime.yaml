@@ -5,14 +5,14 @@ status:
   last_known_build: pass
   last_known_flash: fail
   last_known_verify: fail
-  updated_at: '2026-05-06 19:45:50'
+  updated_at: '2026-05-06 20:13:59'
 last_build:
   result: pass
-  evidence: tools/build_log.txt
+  evidence: reports/build_log.txt
   summary: Build log reports 0 Error(s).
 last_flash:
   result: fail
-  evidence: tools/flash_log.txt
+  evidence: reports/flash_log.txt
   summary: Flash log indicates failure.
 last_verify:
   result: fail

@@ -1,49 +1,61 @@
-# 项目目录结构规范（强制）
+# Project Structure
 
-## 架构分层目录
+> Generated file. Do not edit by hand.
+> Source of truth: `.context/engineering.yaml` + `.workflow/project.yaml`.
+> Regenerate with: `python tools/project_structure.py generate` or `python tools/workflow.py structure`.
 
-本工程使用以下目录结构，AI生成代码时必须严格遵守：
+## Project
 
-```
-very_test/
-├── App/          # 应用层 - 纯业务逻辑
-│   └── *.c, *.h
-├── Service/      # 服务层 - 硬件功能抽象
-│   └── *.c, *.h
-├── Driver/       # 驱动层 - 直接操作寄存器
-│   └── *.c, *.h
-├── Test/         # 测试代码（持久保留）
-│   └── *.c, *.h
-├── Core/         # CubeMX 生成代码（纯平台代码）
-│   ├── Src/
-│   └── Inc/
-├── Drivers/      # HAL 库
-└── MDK-ARM/      # Keil 工程
-```
+- Project: `very_test`
+- Board: `STM32F103 template board`
+- MCU: `STM32F103C8`
+- Reports directory: `reports`
 
-## 禁止事项
+## Project-Invariant Directories
 
-- ❌ 禁止创建 USER 文件夹存放分层代码
-- ❌ 禁止创建 Middleware/Application 等其他分层目录
-- ❌ 禁止把 App/Service/Driver/Test 放在其他任何位置
+These directories belong to the reusable project framework. Do not move or rename them because the host OS, IDE, compiler, debugger, or AI Agent changes.
 
-## 必须遵守
+| Path | Role | Changes when | Exists |
+|------|------|--------------|--------|
+| `App` | project application layer | business/application behavior changes | yes |
+| `Service` | project service abstraction layer | feature-level hardware services or orchestration change | yes |
+| `Driver` | project driver API layer | board/MCU peripherals change, while preserving public layer contracts | yes |
+| `Test` | project firmware test layer | behavior or driver/service test coverage changes | yes |
+| `docs` | project knowledge base and reference notes | requirements, architecture, hardware facts, or workflow rules change | yes |
+| `.context` | AI handoff fact source | engineering, hardware, version, or runtime facts change | yes |
+| `.workflow` | project configuration source for tools and layout | project name, board, MCU, toolchain, output paths, serial, flash, or layout config changes | yes |
+| `.agents` | agent-neutral AI workflow assets and canonical Skills | AI workflow entrypoints, Skills, or compatibility mirrors change | yes |
+| `tools` | deterministic automation entry points | workflow actions or adapters change | yes |
+| `reports` | current evidence snapshots for automation reports | build, flash, review, check, or verify evidence is refreshed | yes |
 
-- ✅ 所有新增模块必须放入 App/、Service/、Driver/ 或 Test/
-- ✅ 保持现有文件引用路径不变
-- ✅ Keil工程中的Include Path已配置为 Core/Inc、Driver、Service、App
+## Platform / Tool Adapter Boundaries
 
-## 违规后果
+These paths may vary when the MCU, board, IDE, toolchain, generated code, or optional Agent adapter changes.
 
-如果AI把代码生成到USER或其他位置：
-1. build/flash skill 将无法找到文件
-2. 编译会失败
-3. 需要手动迁移代码
+| Path | Role | Changes when | Exists |
+|------|------|--------------|--------|
+| `Core` | CubeMX/generated platform code | MCU, CubeMX configuration, HAL generation, or platform startup changes | yes |
+| `Drivers` | vendor HAL/CMSIS libraries | vendor package or MCU family changes | yes |
+| `MDK-ARM` | Keil project adapter artifacts | Keil project generation or Keil adapter configuration changes | yes |
+| `.vscode` | local IDE/editor settings | developer workstation/editor configuration changes | yes |
+| `.claude` | optional Claude/Codex skill adapter | that adapter changes; generic agents should not depend on it as the only workflow source | yes |
+| `very_test.ioc` | CubeMX hardware/platform source | CubeMX board, clock, pin, or peripheral configuration changes | yes |
 
-## 正确示例
+## Active Tool Adapter
 
-新增LED驱动：
-- ✅ Driver/led_driver.c
-- ❌ USER/Driver/led_driver.c
-- ❌ Core/Driver/led_driver.c  (已迁移到 Driver/led_driver.c)
-- ❌ led_driver.c (放在根目录)
+| Fact | Value |
+|------|-------|
+| Active toolchain | `keil` |
+| Tool project file | `MDK-ARM/very_test.uvprojx` |
+| Tool executable | `D:/Keil5/UV4/UV4.exe` |
+| Hex artifact | `MDK-ARM/very_test/very_test.hex` |
+| Build log | `reports/build_log.txt` |
+| Flash log | `reports/flash_log.txt` |
+
+## Hard Rules
+
+- New layered code goes only into `App/`, `Service/`, `Driver/`, or `Test/`.
+- `App/Service/Driver/Test` must not be moved into `Core/`.
+- Do not create `USER/`, `Middleware/`, or `Application/` as replacement layer directories.
+- Host OS, compiler, IDE, debugger, and flash-tool changes belong in `.workflow/project.yaml`, `tools/`, or adapter directories.
+- Build, flash, check, review, and verify reports belong under `reports/` with fixed overwrite paths.

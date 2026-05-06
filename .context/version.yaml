@@ -11,7 +11,7 @@ toolchain:
     exe: D:/Keil5/UV4/UV4.exe
     compiler: ARMCC
     compiler_version_observed: "V5.06 update 5 (build 528)"
-    evidence: tools/build_log.txt
+    evidence: reports/build_log.txt
   gcc:
     status: adapter_available_not_active
   cmake:
@@ -29,6 +29,9 @@ generated_code_boundaries:
     - Driver
     - Test
     - tools
+    - AGENTS.md
+    - .agents/rules
+    - .agents/skills
     - .claude/skills
     - .context
     - .workflow
@@ -36,6 +39,7 @@ generated_code_boundaries:
 critical_scripts:
   workflow_cli: tools/workflow.py
   context_cli: tools/context.py
+  git_guard: tools/git_guard.py
   dev_orchestrator: tools/dev_orchestrator.py
   driver_dev: tools/driver_dev.py
   inject_test_mode: tools/inject_test_mode.py
@@ -43,4 +47,6 @@ critical_scripts:
 compatibility_notes:
   - Keil is the active project adapter.
   - GCC and CMake adapters are available in tools/workflow.py but not active in this project config.
+  - AGENTS.md is the agent-neutral entry point; .agents/skills is the canonical Skill source.
+  - .claude/skills is a Claude/Codex compatibility mirror.
   - Treat CubeMX generated files as generated-code boundary unless the task explicitly targets platform regeneration.

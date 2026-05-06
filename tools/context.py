@@ -121,16 +121,20 @@ def validate(root: Path) -> Tuple[List[str], List[str]]:
         return [str(exc)], warnings
 
     workflow = load_yaml(root / ".workflow" / "project.yaml")
+    reports_dir = str(cfg_get(workflow, "layout.reports", "reports"))
 
     errors += require_keys(
         data["engineering"],
         [
             "source_of_truth.workflow_config",
+            "source_of_truth.agent_rules",
             "layout.app",
             "layout.service",
             "layout.driver",
             "layout.test",
             "layout.reports",
+            "directory_policy.project_invariant",
+            "directory_policy.platform_or_tool_variable",
             "architecture.layers",
             "ai_rules.must_read_before_code_change",
         ],
@@ -160,6 +164,25 @@ def validate(root: Path) -> Tuple[List[str], List[str]]:
                 f"layout mismatch `{key}`: engineering={context_value!r}, workflow={workflow_value!r}"
             )
 
+    for item in cfg_get(data["engineering"], "directory_policy.project_invariant", []):
+        if not isinstance(item, dict):
+            errors.append("engineering: each `directory_policy.project_invariant` item must be a mapping")
+            continue
+        path_value = item.get("path")
+        if not path_value:
+            errors.append("engineering: project invariant directory item missing `path`")
+            continue
+        if not (root / str(path_value)).exists():
+            errors.append(f"engineering: project invariant path missing: {path_value}")
+
+    for item in cfg_get(data["engineering"], "directory_policy.platform_or_tool_variable", []):
+        if not isinstance(item, dict):
+            errors.append("engineering: each `directory_policy.platform_or_tool_variable` item must be a mapping")
+            continue
+        path_value = item.get("path")
+        if path_value and not (root / str(path_value)).exists():
+            warnings.append(f"engineering: platform/tool boundary path not found: {path_value}")
+
     resources = cfg_get(data["hardware"], "resources", [])
     seen: Dict[str, str] = {}
     for resource in resources:
@@ -184,6 +207,14 @@ def validate(root: Path) -> Tuple[List[str], List[str]]:
         if value and not path_exists_or_external(root, value):
             errors.append(f"version: path missing `{key}` -> {value}")
 
+    agent_rules = cfg_get(data["engineering"], "source_of_truth.agent_rules")
+    if agent_rules and not (root / str(agent_rules)).exists():
+        errors.append(f"engineering: agent rules path missing: {agent_rules}")
+
+    git_guard = cfg_get(data["version"], "critical_scripts.git_guard")
+    if git_guard and not (root / str(git_guard)).exists():
+        errors.append(f"version: git guard script missing: {git_guard}")
+
     for path_value in cfg_get(data["version"], "generated_code_boundaries.cube_generated", []):
         if not path_exists_or_external(root, path_value):
             warnings.append(f"version: generated boundary path not found: {path_value}")
@@ -192,6 +223,13 @@ def validate(root: Path) -> Tuple[List[str], List[str]]:
         value = cfg_get(data["runtime"], evidence_key)
         if value and not path_exists_or_external(root, value):
             warnings.append(f"runtime: evidence path not found `{evidence_key}` -> {value}")
+        if value and not str(value).replace("\\", "/").startswith(f"{reports_dir}/"):
+            errors.append(f"runtime: evidence `{evidence_key}` must be under `{reports_dir}/`, got {value}")
+
+    for key in ("build.log_path", "flash.log_path"):
+        value = cfg_get(workflow, key)
+        if value and not str(value).replace("\\", "/").startswith(f"{reports_dir}/"):
+            errors.append(f"workflow: `{key}` must be under `{reports_dir}/`, got {value}")
 
     return errors, warnings
 
@@ -207,6 +245,13 @@ def print_summary(root: Path) -> int:
     print(f"- Toolchain adapter: {cfg_get(workflow, 'toolchain.type', cfg_get(data['version'], 'toolchain.active_adapter', 'unknown'))}")
     print(f"- Layout: App={cfg_get(data['engineering'], 'layout.app')}, Service={cfg_get(data['engineering'], 'layout.service')}, Driver={cfg_get(data['engineering'], 'layout.driver')}, Test={cfg_get(data['engineering'], 'layout.test')}")
     print("- Dependency rule: App -> Service -> Driver -> HAL")
+    invariant_paths = [
+        str(item.get("path"))
+        for item in cfg_get(data["engineering"], "directory_policy.project_invariant", [])
+        if isinstance(item, dict) and item.get("path")
+    ]
+    if invariant_paths:
+        print("- Project-invariant dirs: " + ", ".join(invariant_paths))
     print("")
     print("## Hardware")
     print(f"- MCU: {cfg_get(data['hardware'], 'mcu.family')} / {cfg_get(data['hardware'], 'mcu.device')}")
@@ -233,7 +278,7 @@ def print_summary(root: Path) -> int:
 
 
 def infer_build(root: Path, workflow: Dict[str, Any]) -> Dict[str, str]:
-    build_log = root / str(cfg_get(workflow, "build.log_path", "tools/build_log.txt"))
+    build_log = root / str(cfg_get(workflow, "build.log_path", "reports/build_log.txt"))
     if not build_log.exists():
         return {"result": "unknown", "evidence": relpath(root, build_log), "summary": "No build log found."}
     text = build_log.read_text(encoding="utf-8", errors="ignore")
@@ -249,7 +294,7 @@ def infer_build(root: Path, workflow: Dict[str, Any]) -> Dict[str, str]:
 
 
 def infer_flash(root: Path, workflow: Dict[str, Any]) -> Dict[str, str]:
-    flash_log = root / str(cfg_get(workflow, "flash.log_path", "tools/flash_log.txt"))
+    flash_log = root / str(cfg_get(workflow, "flash.log_path", "reports/flash_log.txt"))
     if not flash_log.exists():
         return {"result": "unknown", "evidence": relpath(root, flash_log), "summary": "No flash log found."}
     text = flash_log.read_text(encoding="utf-8", errors="ignore")

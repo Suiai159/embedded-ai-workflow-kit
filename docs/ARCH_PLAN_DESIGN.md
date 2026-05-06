@@ -495,13 +495,13 @@ PC13 (物理引脚)
 
 ### 需要创建的文件
 
-1. **.claude/skills/arch/SKILL.md** - Skill 入口定义
+1. **.agents/skills/arch/SKILL.md** - canonical Skill 入口定义
    - 参数解析（--req, --output）
    - 前置检查（需求.md 存在性）
    - 多轮 SubAgent 调用协调
    - 用户交互处理（展示问题、收集回答）
 
-2. **.claude/skills/arch/planner/SYSTEM.md** - SubAgent 系统提示
+2. **.agents/skills/arch/planner/SYSTEM.md** - SubAgent 系统提示
    - 第1轮：需求分析 + 模糊点识别
    - 第2轮：架构设计 + 文档生成
    - 输出格式规范（JSON + Markdown）

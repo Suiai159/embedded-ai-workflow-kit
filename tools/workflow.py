@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 
-ROOT_MARKERS = (".workflow/project.yaml", "CLAUDE.md", ".git")
+ROOT_MARKERS = (".workflow/project.yaml", "AGENTS.md", "CLAUDE.md", ".git")
 
 
 class WorkflowError(RuntimeError):
@@ -300,7 +300,7 @@ def command_verify_config(root: Path, config: Dict[str, Any]) -> int:
         "elf_path": str(resolve_project_path(root, str(cfg_get(config, "build.elf_path"))))
         if cfg_get(config, "build.elf_path")
         else "",
-        "build_log": str(resolve_project_path(root, str(cfg_get(config, "build.log_path", "tools/build_log.txt")))),
+        "build_log": str(resolve_project_path(root, str(cfg_get(config, "build.log_path", "reports/build_log.txt")))),
     }
     if toolchain == "keil":
         summary["project_file"] = str(resolve_project_path(root, str(cfg_get(config, "toolchain.project_file"))))
@@ -331,7 +331,7 @@ def build_keil(root: Path, config: Dict[str, Any], test_mode: bool) -> int:
 
     project_name = str(cfg_get(config, "project.name"))
     project_file = resolve_project_path(root, str(cfg_get(config, "toolchain.project_file")))
-    log_file = resolve_project_path(root, str(cfg_get(config, "build.log_path", "tools/build_log.txt")))
+    log_file = resolve_project_path(root, str(cfg_get(config, "build.log_path", "reports/build_log.txt")))
     hex_file = resolve_project_path(root, str(cfg_get(config, "build.hex_path")))
     uv4 = Path(str(cfg_get(config, "toolchain.exe")))
 
@@ -379,7 +379,7 @@ def build_gcc(root: Path, config: Dict[str, Any], test_mode: bool) -> int:
     require_config(config, ["project.name", "build.command"])
 
     project_name = str(cfg_get(config, "project.name"))
-    log_file = resolve_project_path(root, str(cfg_get(config, "build.log_path", "tools/build_log.txt")))
+    log_file = resolve_project_path(root, str(cfg_get(config, "build.log_path", "reports/build_log.txt")))
     command_value = cfg_get(config, "build.test_command" if test_mode else "build.command")
     if not command_value:
         command_value = cfg_get(config, "build.command")
@@ -414,7 +414,7 @@ def build_cmake(root: Path, config: Dict[str, Any], test_mode: bool) -> int:
     project_name = str(cfg_get(config, "project.name"))
     source_dir = resolve_project_path(root, str(cfg_get(config, "toolchain.source_dir")))
     build_dir = resolve_project_path(root, str(cfg_get(config, "toolchain.build_dir")))
-    log_file = resolve_project_path(root, str(cfg_get(config, "build.log_path", "tools/build_log.txt")))
+    log_file = resolve_project_path(root, str(cfg_get(config, "build.log_path", "reports/build_log.txt")))
     cmake = str(cfg_get(config, "toolchain.cmake", "cmake"))
 
     configure_args = [
@@ -492,7 +492,7 @@ def flash_keil(root: Path, config: Dict[str, Any]) -> int:
 
     project_name = str(cfg_get(config, "project.name"))
     project_file = resolve_project_path(root, str(cfg_get(config, "toolchain.project_file")))
-    log_file = resolve_project_path(root, str(cfg_get(config, "flash.log_path", "tools/flash_log.txt")))
+    log_file = resolve_project_path(root, str(cfg_get(config, "flash.log_path", "reports/flash_log.txt")))
     hex_file = resolve_project_path(root, str(cfg_get(config, "build.hex_path")))
     uv4 = Path(str(cfg_get(config, "toolchain.exe")))
 
@@ -528,7 +528,7 @@ def flash_command(root: Path, config: Dict[str, Any]) -> int:
     require_config(config, ["project.name", "flash.command"])
 
     project_name = str(cfg_get(config, "project.name"))
-    log_file = resolve_project_path(root, str(cfg_get(config, "flash.log_path", "tools/flash_log.txt")))
+    log_file = resolve_project_path(root, str(cfg_get(config, "flash.log_path", "reports/flash_log.txt")))
     command = shell_join(cfg_get(config, "flash.command"))
 
     if not artifact_exists(root, config) and any(cfg_get(config, key) for key in ("build.hex_path", "build.elf_path", "build.bin_path")):
@@ -663,7 +663,7 @@ def register_driver_command(root: Path, config: Dict[str, Any], name: str) -> in
         driver_h=f"{driver_dir}/{driver_name}_driver.h",
         test_c=f"{test_dir}/{driver_name}_driver_test.c",
     )
-    log_file = resolve_project_path(root, str(cfg_get(config, "register_driver.log_path", "tools/register_driver_log.txt")))
+    log_file = resolve_project_path(root, str(cfg_get(config, "register_driver.log_path", "reports/register_driver_log.txt")))
     print(f"Registering driver with command adapter: {command}")
     result = run_logged_command(command, log_file, root, int(cfg_get(config, "register_driver.timeout_sec", 60)))
     print_log("Register Driver", log_file, result)
@@ -707,6 +707,15 @@ def refresh_runtime_context(root: Path) -> None:
         pass
 
 
+def command_structure(root: Path, check: bool) -> int:
+    structure_tool = root / "tools" / "project_structure.py"
+    if not structure_tool.exists():
+        raise WorkflowError(f"Missing structure tool: {structure_tool}")
+    command = [sys.executable, str(structure_tool), "validate" if check else "generate"]
+    completed = subprocess.run(command, cwd=root)
+    return completed.returncode
+
+
 def main() -> int:
     ensure_utf8_stdio()
 
@@ -720,6 +729,9 @@ def main() -> int:
     sub.add_parser("flash", help="Flash configured firmware artifact")
     sub.add_parser("status", help="Print workflow status as JSON")
     sub.add_parser("verify-config", help="Validate and print resolved workflow config")
+
+    structure_parser = sub.add_parser("structure", help="Generate or validate .project_structure")
+    structure_parser.add_argument("--check", action="store_true", help="Validate without writing")
 
     register_parser = sub.add_parser("register-driver", help="Register driver/test files in project")
     register_parser.add_argument("--name", required=True, help="Driver name, e.g. st7789")
@@ -756,6 +768,8 @@ def main() -> int:
             return command_status(root, config)
         if args.command == "verify-config":
             return command_verify_config(root, config)
+        if args.command == "structure":
+            return command_structure(root, args.check)
     except WorkflowError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1

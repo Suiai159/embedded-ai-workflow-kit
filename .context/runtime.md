@@ -8,12 +8,12 @@ This file is the current handoff snapshot. Historical work remains in `PROJECT_L
 - Last known build: pass
 - Last known flash: fail
 - Last known verify: fail
-- Updated at: 2026-05-06 19:45:50
+- Updated at: 2026-05-06 20:13:59
 
 ## Evidence
 
-- Build evidence: `tools/build_log.txt`
-- Flash evidence: `tools/flash_log.txt`
+- Build evidence: `reports/build_log.txt`
+- Flash evidence: `reports/flash_log.txt`
 - Verify evidence: `reports/verify_report.md`
 
 ## Current Summaries

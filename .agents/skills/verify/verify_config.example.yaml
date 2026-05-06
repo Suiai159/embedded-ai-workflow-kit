@@ -1,0 +1,28 @@
+# 验证Skill配置文件示例
+# 复制此文件到项目根目录并命名为 verify_config.yaml
+
+# 串口配置
+serial:
+  port: "auto"           # auto自动检测，或指定如"COM3"
+  baudrate: 115200
+  databits: 8
+  stopbits: 1
+  parity: "none"
+
+# 测试配置
+test:
+  timeout_ms: 2000       # 默认超时时间
+  reset_before_test: true    # 测试前复位目标板
+  delay_after_reset_ms: 500  # 复位后等待时间
+
+# 验证流程配置
+validation:
+  max_retries: 3         # 最大重试次数
+  auto_fix: true         # 是否启用自动修复
+  fix_strategy: "conservative"  # conservative/moderate/aggressive
+
+# 报告配置
+report:
+  format: "markdown"     # markdown/json/html
+  output_path: "./reports/verify_report.md"
+  include_diff: true     # 报告中包含代码修改diff

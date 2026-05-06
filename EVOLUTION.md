@@ -6,6 +6,39 @@
 
 ## 2026-05-06
 
+### [doc] 明确 Agent-neutral 工程定位
+
+**目标**：避免工程默认绑定 Claude Code，让任意能读写文件和运行命令的 AI Agent 都能利用同一套嵌入式工程框架。
+
+**改造**：
+- [structure] 新增 `AGENTS.md`，作为通用 AI Agent 接手入口
+- [structure] 新增 `.agents/`，用 `.agents/skills/` 管理通用 canonical Skills
+- [structure] 新增 `.agents/rules/`，作为通用 Agent 规则源；根目录 `AGENTS.md`、`CLAUDE.md` 保留为发现入口/兼容入口
+- [tool] 新增 `tools/agent_assets.py`，支持校验 Agent 资产并同步 `.claude/skills/` 兼容镜像
+- [tool] 新增 `tools/git_guard.py`，把修改前 git 状态检查和最终提交要求变成可执行约束
+- [doc] 更新 `README.md`、`CLAUDE.md`、`docs/项目介绍.md`，明确 `.claude/skills/` 只是 Claude/Codex 兼容镜像
+- [doc] 更新 `.context/version.*`、`.context/engineering.md`，把 Agent-neutral 入口纳入上下文事实
+- [arch] 将默认叙事从 “Claude Code Skill 工作流” 调整为 “Agent 工作流 + tools 确定性命令 + 可选 Skill 适配器”
+- [arch] 明确 `App/Service/Driver` 是工程框架不变量，不随主机平台、IDE、工具链或 Agent 变化
+- [arch] 明确工程稳定目录与平台/工具适配目录的边界：`App/Service/Driver/Test/docs/.context/.workflow/.agents/tools/reports` 属于工程本身，`Core/Drivers/MDK-ARM/.vscode/.claude/*.ioc` 属于平台、工具或可选 adapter 边界
+- [tool] 新增 `tools/project_structure.py` 和 `python tools/workflow.py structure`，让 `.project_structure` 从上下文与 workflow 配置一键生成
+- [policy] 规定 Agent 修改文件后必须只暂存本次任务文件并提交，除非用户明确说不要提交
+
+---
+
+### [tool] 统一报告输出到 `reports/`
+
+**目标**：让 build、flash、check、review、verify 的输出都成为固定路径的当前证据快照，避免报告散落和多版本堆积。
+
+**改造**：
+- [tool] `.workflow/project.yaml` 中 `build.log_path`、`flash.log_path` 迁移到 `reports/build_log.txt`、`reports/flash_log.txt`
+- [tool] `workflow.py`、`dev_orchestrator.py`、`context.py` 默认读取 reports 下的 build/flash 日志
+- [tool] 删除旧位置 `tools/build_log.txt`、`tools/flash_log.txt`，避免继续把 `tools/` 当作日志目录
+- [doc] 新增 `reports/README.md`，明确固定文件名和覆盖写入规则
+- [doc] 更新 `AGENTS.md`、`CLAUDE.md`、`README.md`、`docs/项目介绍.md`，禁止默认生成散乱报告文件
+
+---
+
 ### [tool] 新增可复用工作流适配层
 
 **目标**：把工程工作流从具体板子、Keil 路径和工程名中解耦，形成可迁移到不同开发平台和工具链的统一入口。
@@ -33,7 +66,7 @@
 **当前状态**：
 - `python tools/context.py validate` 通过
 - `python tools/workflow.py verify-config` 可解析当前 Keil 配置
-- runtime 快照记录：build pass，flash fail（现有 `tools/flash_log.txt` 显示 Target DLL cancelled），verify fail（现有报告显示需求文档编码问题）
+- runtime 快照记录：build pass，flash fail（现有 `reports/flash_log.txt` 显示 Target DLL cancelled），verify fail（现有报告显示需求文档编码问题）
 
 ---
 

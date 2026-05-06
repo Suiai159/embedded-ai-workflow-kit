@@ -2,7 +2,7 @@
 
 ## 可复用工作流配置
 
-本模板现在把工程工作流配置集中放在 `.workflow/project.yaml`。Skill 负责流程编排，`tools/workflow.py` 负责确定性动作，当前支持 Keil、GCC 命令式构建和 CMake adapter。
+本模板现在把工程工作流配置集中放在 `.workflow/project.yaml`。AI Agent 负责流程编排，`tools/workflow.py` 负责确定性动作，当前支持 Keil、GCC 命令式构建和 CMake adapter。
 
 常用入口：
 
@@ -40,11 +40,11 @@ python tools/context.py summary
 python tools/context.py touch-runtime
 ```
 
-换 AI、换工具链或排查硬件问题前，先看 `python tools/context.py summary`，它是当前工程的事实快照。
+换 AI、换工具链或排查硬件问题前，先读 `AGENTS.md`，再看 `python tools/context.py summary`。前者是通用接手协议，后者是当前工程事实快照。
 
 > **工程定位**：这是一个**通用可复制的 STM32 嵌入式开发模板**，用于作为新项目的基础起点。
 >
-> 它不仅包含一个可编译的 Keil 工程，还包含完整的 **Claude Code 辅助开发工作流**、**四层分层架构规范**和**自动化工具链**。
+> 它不仅包含一个可编译的 Keil 工程，还包含完整的 **AI Agent 辅助开发工作流**、**四层分层架构规范**和**自动化工具链**。
 
 ---
 
@@ -52,13 +52,13 @@ python tools/context.py touch-runtime
 
 | 特性 | 说明 |
 |------|------|
-| **四层分层架构** | App → Service → Driver → HAL，依赖方向严格向下 |
+| **稳定分层架构** | App → Service → Driver 是工程框架不变量；HAL/平台适配可随 MCU 和工具链变化 |
 | **需求驱动开发** | `需求.md` 是唯一真相源，代码从需求文档生成 |
-| **Claude Code Skill 工作流** | 从需求分析、架构设计、代码生成到编译烧录的全流程自动化辅助 |
+| **Agent-neutral 工作流** | 从需求分析、架构设计、代码生成到编译烧录的全流程自动化辅助；`.agents/skills/` 是通用 Skill 源，Claude Skill 只是兼容镜像 |
 | **驱动开发支持** | 支持从零根据 datasheet 生成 Driver 层代码和测试代码 |
 | **AI 代码审查** | `code-reviewer` 升级为 AI SubAgent 语义分析，覆盖硬件配置与时序计算 |
 | **固件自验证框架** | `verify` 编译 TEST_MODE 固件，自动跑测试并输出结构化 JSON |
-| **项目日志总控** | `/dev` Skill 自动管理任务链、记录进度、推进工作流 |
+| **项目日志总控** | `/dev` 这类 Agent 命令自动管理任务链、记录进度、推进工作流 |
 | **Keil 自动集成** | 新增文件自动注册到 `.uvprojx` 工程，无需手动添加 |
 
 ---
@@ -123,7 +123,9 @@ very_test/
 │   ├── driver_dev.py         # 驱动开发辅助 + Keil 工程自动注册
 │   ├── inject_test_mode.py   # 向 uvprojx 注入 TEST_MODE 宏
 │   └── dev_orchestrator.py   # 项目总控脚本
-├── .claude/skills/      # Claude Code Skill 定义
+├── .agents/             # Agent-neutral AI 工作流资产与 canonical Skills
+│   └── skills/
+├── .claude/skills/      # Claude/Codex Skill 兼容镜像
 ├── docs/                # 规范文档与参考资料
 │   ├── ARCHITECTURE.md
 │   ├── WORKFLOW.md
@@ -135,7 +137,8 @@ very_test/
 │       ├── led.md
 │       └── platform-notes.md
 ├── reports/             # Skill 审查报告输出（不纳入 git）
-├── CLAUDE.md            # 项目开发规范（AI 必读）
+├── AGENTS.md            # 通用 AI Agent 接手入口
+├── CLAUDE.md            # Claude Code 兼容入口（内容遵循通用 Agent 规范）
 ├── EVOLUTION.md         # 工程演进日志（结构变更、Skill 迭代）
 ├── PROJECT_LOG.md       # 项目进度日志（日常开发任务）
 ├── 需求.md               # 当前项目需求文档
@@ -144,13 +147,58 @@ very_test/
 
 **重要规则**：
 
+- `App/`、`Service/`、`Driver/` 是工程框架层，不随 Windows/Linux、Keil/GCC/CMake 或 AI Agent 变化
+- 换 MCU/开发板时可以改 `Driver` 内部实现和 HAL 绑定，但不能随意改变 App/Service/Driver 的依赖契约
+- 换构建工具时只改 `.workflow/project.yaml`、`tools/workflow.py` 或平台 adapter，不改分层架构
 - 所有分层代码必须放在 `App/`、`Service/`、`Driver/`、`Test/` 下
 - ❌ **禁止**创建 `USER/` 目录存放分层代码
 - ❌ **禁止**把 `App/Service/Driver/Test` 放进 `Core/` 内（`Core/` 只放 CubeMX 生成代码）
 
+### 目录边界规则
+
+工程本身的稳定目录：
+
+| 目录 | 含义 |
+|------|------|
+| `App/` | 应用行为和业务逻辑 |
+| `Service/` | 硬件能力抽象和业务可用服务 |
+| `Driver/` | 工程自有驱动 API 和底层封装 |
+| `Test/` | 固件测试代码 |
+| `docs/` | 项目知识库、参考资料和说明 |
+| `.context/` | AI 接手事实源 |
+| `.workflow/` | 项目工作流配置 |
+| `.agents/` | Agent-neutral AI 工作流资产和 canonical Skills |
+| `tools/` | 确定性工具和 adapter |
+| `reports/` | 当前证据快照，默认覆盖 |
+
+平台、工具链或本地环境相关目录：
+
+| 目录或文件 | 含义 |
+|------------|------|
+| `Core/` | CubeMX 生成的平台代码 |
+| `Drivers/` | 厂商 HAL/CMSIS 代码 |
+| `MDK-ARM/` | Keil 工程 adapter |
+| `.vscode/` | 本地编辑器配置 |
+| `.claude/` | 可选 Claude/Codex Skill adapter |
+| `very_test.ioc` | CubeMX 硬件/平台配置源 |
+
+换 Windows/Linux、Keil/GCC/CMake、OpenOCD/GDB 或 AI Agent 时，优先保持稳定目录不动，只调整 `.workflow/project.yaml`、`tools/workflow.py`、adapter 或平台生成区域。
+
+### 报告目录规则
+
+`reports/` 是当前证据快照目录。build、flash、check、review、verify 等报告都必须写到这里，并使用固定文件名覆盖旧结果。历史摘要写入 `PROJECT_LOG.md` 或 `EVOLUTION.md`，不要靠堆报告文件保存历史。
+
 ---
 
-## 可用 Skill 清单
+## 可用 Agent 工作流入口
+
+本工程默认以 `AGENTS.md`、`.context/`、`.workflow/`、`.agents/skills/` 和 `tools/` 作为通用 Agent 接口。`.claude/skills/` 是 Claude/Codex Skill 兼容镜像；其他 AI 优先读取 `.agents/skills/` 作为流程说明，也可以直接调用下方对应的 `tools/*.py` 命令。
+
+规则文件采用“两层入口”：
+
+- 根目录 `AGENTS.md`、`CLAUDE.md` 是 Agent 自动发现入口和兼容入口。
+- `.agents/rules/` 是通用规则源，例如规则文件放置策略和强制 git 提交策略。
+- `.agents/skills/` 是通用 Skill 源，`.claude/skills/` 只是兼容镜像。
 
 ### 需求与架构
 - `/req` — 将口头需求转为标准 `需求.md`
@@ -175,6 +223,18 @@ very_test/
 - `/dev --go` — 自动推进当前任务链
 - `/dev --plan` — 生成今日开发计划
 - `/dev --wrap` — 结束今日工作并建议 commit
+
+### Git 强制保存
+
+任何 Agent 修改文件后，都必须提交本次任务变更，除非用户明确说不要提交：
+
+```bash
+python tools/git_guard.py status
+python tools/git_guard.py pre-final
+python tools/git_guard.py commit --message "type: summary" --paths <task-owned-files>
+```
+
+提交前只暂存本次任务拥有的文件，不能把用户已有改动、本地设置或生成依赖文件混进提交。
 
 ---
 
@@ -209,9 +269,13 @@ very_test/
 ## 复制时的注意事项
 
 1. **保留的规范文件**（必须跟着走）：
+   - `AGENTS.md`
    - `CLAUDE.md`
+   - `.context/` 目录
+   - `.workflow/` 目录
+   - `.agents/` 目录
    - `docs/` 目录（含 `reference/`）
-   - `.claude/skills/` 目录
+   - `.claude/skills/` 目录（如果使用 Claude/Codex Skill 兼容镜像）
    - `tools/` 目录
 
 2. **需要清空的文件**：
@@ -228,8 +292,8 @@ very_test/
 - **Keil MDK-ARM**（当前 adapter 使用；路径在 `.workflow/project.yaml` 的 `toolchain.exe` 修改）
 - **Git Bash**（Windows）或 **WSL**（用于运行 `.sh` 构建脚本）
 - **ST-Link / DAP-Link** 调试器
-- **Python 3.8+**（`verify` Skill 需要 `pyserial`、`pyyaml`）
-- **Claude Code**（用于调用 Skill 工作流）
+- **Python 3.8+**（`verify` 和上下文工具需要 `pyserial`、`pyyaml`）
+- **任意支持读写文件和运行命令的 AI Agent**（Claude/Codex Skill 适配器可选）
 
 ---
 

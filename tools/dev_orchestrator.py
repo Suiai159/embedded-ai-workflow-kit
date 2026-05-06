@@ -27,7 +27,7 @@ DRIVER_DIR = Path(str(cfg_get(CONFIG, "layout.driver", "Driver")))
 TEST_DIR = Path(str(cfg_get(CONFIG, "layout.test", "Test")))
 
 PROJECT_LOG = Path("PROJECT_LOG.md")
-BUILD_LOG = Path(str(cfg_get(CONFIG, "build.log_path", "tools/build_log.txt")))
+BUILD_LOG = Path(str(cfg_get(CONFIG, "build.log_path", "reports/build_log.txt")))
 REPORT_FILES = {
     "code_review": REPORT_DIR / "code_review_report.md",
     "verify": REPORT_DIR / "verify_report.md",

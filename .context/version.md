@@ -6,7 +6,7 @@ This file records compatibility-sensitive project facts. The machine-readable co
 
 The active adapter is Keil, configured in `.workflow/project.yaml`.
 
-The last observed compiler line in `tools/build_log.txt` is:
+The last observed compiler line in `reports/build_log.txt` is:
 
 ```text
 ARMCC V5.06 update 5 (build 528)
@@ -30,6 +30,11 @@ Treat these as hand-maintained workflow/application areas:
 - `Driver/`
 - `Test/`
 - `tools/`
+- `AGENTS.md`
+- `.agents/rules/`
+- `.agents/skills/`
 - `.claude/skills/`
 - `.context/`
 - `.workflow/`
+
+`AGENTS.md` is the agent-neutral entry point. `.agents/skills/` is the canonical Skill source. `.claude/skills/` is a Claude/Codex compatibility mirror, not the project default.

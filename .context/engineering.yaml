@@ -4,6 +4,8 @@ source_of_truth:
   workflow_config: .workflow/project.yaml
   architecture_doc: docs/ARCHITECTURE.md
   project_structure: .project_structure
+  agent_assets: .agents/manifest.yaml
+  agent_rules: .agents/rules
   requirement_doc: "\u9700\u6c42.md"
 
 layout:
@@ -15,7 +17,69 @@ layout:
   generated_core: Core
   vendor_drivers: Drivers
 
+directory_policy:
+  project_invariant:
+    - path: App
+      role: project application layer
+      changes_when: business/application behavior changes
+    - path: Service
+      role: project service abstraction layer
+      changes_when: feature-level hardware services or orchestration change
+    - path: Driver
+      role: project driver API layer
+      changes_when: board/MCU peripherals change, while preserving public layer contracts
+    - path: Test
+      role: project firmware test layer
+      changes_when: behavior or driver/service test coverage changes
+    - path: docs
+      role: project knowledge base and reference notes
+      changes_when: requirements, architecture, hardware facts, or workflow rules change
+    - path: .context
+      role: AI handoff fact source
+      changes_when: engineering, hardware, version, or runtime facts change
+    - path: .workflow
+      role: project configuration source for tools and layout
+      changes_when: project name, board, MCU, toolchain, output paths, serial, flash, or layout config changes
+    - path: .agents
+      role: agent-neutral AI workflow assets and canonical Skills
+      changes_when: AI workflow entrypoints, Skills, or compatibility mirrors change
+    - path: tools
+      role: deterministic automation entry points
+      changes_when: workflow actions or adapters change
+    - path: reports
+      role: current evidence snapshots for automation reports
+      changes_when: build, flash, review, check, or verify evidence is refreshed
+  platform_or_tool_variable:
+    - path: Core
+      role: CubeMX/generated platform code
+      changes_when: MCU, CubeMX configuration, HAL generation, or platform startup changes
+    - path: Drivers
+      role: vendor HAL/CMSIS libraries
+      changes_when: vendor package or MCU family changes
+    - path: MDK-ARM
+      role: Keil project adapter artifacts
+      changes_when: Keil project generation or Keil adapter configuration changes
+    - path: .vscode
+      role: local IDE/editor settings
+      changes_when: developer workstation/editor configuration changes
+    - path: .claude
+      role: optional Claude/Codex skill adapter
+      changes_when: that adapter changes; generic agents should not depend on it as the only workflow source
+    - path: very_test.ioc
+      role: CubeMX hardware/platform source
+      changes_when: CubeMX board, clock, pin, or peripheral configuration changes
+  rules:
+    - Do not move App, Service, Driver, Test, docs, .context, .workflow, .agents, tools, or reports because the host OS, IDE, compiler, or AI agent changes.
+    - Keep canonical Skills in .agents/skills; tool-specific Skill folders are compatibility mirrors.
+    - Put host OS, IDE, compiler, debugger, and flash tool differences into .workflow/project.yaml, tools/workflow.py, or a platform adapter.
+    - Keep build, flash, review, check, and verify reports under reports with fixed overwrite paths.
+
 architecture:
+  invariants:
+    - App, Service, and Driver are project framework layers.
+    - These layers do not change when the host OS, build tool, IDE, or firmware toolchain changes.
+    - A hardware or MCU migration may change Driver internals and platform bindings, but not the App/Service/Driver layer contract.
+    - HAL/Core/Drivers/vendor files are platform adapter boundaries, not project architecture layers owned by application logic.
   layers:
     - name: App
       path: App
@@ -37,6 +101,16 @@ architecture:
       responsibility: CubeMX generated platform code and vendor libraries
       allowed_dependencies: [vendor_generated]
       forbidden_dependencies: [manual_feature_logic]
+  platform_variable_boundary:
+    host_os: [.workflow/project.yaml, tools/workflow.py]
+    build_toolchain: [.workflow/project.yaml, tools/workflow.py]
+    mcu_vendor_hal: [Core, Drivers, very_test.ioc]
+    driver_implementation: [Driver]
+  stable_project_boundary:
+    - App
+    - Service
+    - Driver public APIs
+    - Test
 
 initialization:
   entrypoint: Core/Src/main.c
@@ -53,12 +127,19 @@ initialization:
 
 ai_rules:
   must_read_before_code_change:
+    - AGENTS.md
     - .context/engineering.yaml
     - .context/hardware.yaml
     - .context/version.yaml
     - .context/runtime.yaml
+    - .agents/rules/entrypoints.md
+    - .agents/rules/git.md
     - .workflow/project.yaml
     - "\u9700\u6c42.md"
+  git_required:
+    - run git status before editing
+    - stage only task-owned changes
+    - commit before final handoff unless the user explicitly says not to commit
   do_not_guess:
     - hardware pin polarity
     - timer clock and frequency math

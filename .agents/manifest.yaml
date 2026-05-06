@@ -1,0 +1,22 @@
+schema: agent-assets-1.0
+canonical:
+  handoff: AGENTS.md
+  rules: .agents/rules
+  skills: .agents/skills
+  context: .context
+  workflow: .workflow/project.yaml
+  tools: tools
+
+compatibility_mirrors:
+  claude:
+    skills: .claude/skills
+    entrypoint: CLAUDE.md
+    status: compatibility
+
+rules:
+  - Root Agent files are discovery shims; reusable policy lives under .agents/rules.
+  - Edit canonical Skills under .agents/skills first.
+  - Use tools/agent_assets.py sync-skills --target claude to refresh compatibility mirrors.
+  - Skills describe workflow; deterministic execution belongs in tools/.
+  - Project facts belong in .context/, not in agent-specific prompts.
+  - Agents must commit task changes before final handoff unless the user explicitly says not to.

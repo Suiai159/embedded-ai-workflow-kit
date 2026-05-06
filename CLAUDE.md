@@ -1,13 +1,33 @@
 # 项目开发规范
 
+> 本文件是 Claude Code 兼容入口，不代表工程默认绑定 Claude Code。通用 AI Agent 入口是 `AGENTS.md`；canonical rules 位于 `.agents/rules/`，canonical Skills 位于 `.agents/skills/`；所有 Agent 都应遵循 `.context/`、`.workflow/` 和 `tools/` 定义的事实与命令。
+
 ## 可复用工作流入口
 
 本工程的板子、工具链、工程文件、hex 输出、串口和目录布局统一声明在 `.workflow/project.yaml`。
 
-- Skill 只负责编排流程，不直接硬编码板子、工程名、Keil 路径或 hex 路径。
+- Agent 工作流只负责编排流程，不直接硬编码板子、工程名、Keil 路径或 hex 路径。
 - 构建、烧录、工程文件注册等确定性动作统一通过 `python tools/workflow.py ...` 执行。
-- 当前支持 `toolchain.type: keil`、`gcc`、`cmake`；新增工具链时优先扩展 `tools/workflow.py`，不要复制一套新的 Skill。
+- 当前支持 `toolchain.type: keil`、`gcc`、`cmake`；新增工具链时优先扩展 `tools/workflow.py`，不要复制一套新的 Agent 流程。
 - 旧入口 `tools/build_keil.sh`、`tools/flash_keil.sh` 保留为兼容 wrapper。
+
+## 规则文件位置
+
+- `AGENTS.md` 和 `CLAUDE.md` 保留在根目录，作为 Agent 自动发现入口和兼容入口。
+- 通用规则源放在 `.agents/rules/`，不要把长期规则只写进 `.claude/`。
+- 通用 Skills 源放在 `.agents/skills/`，`.claude/skills/` 是兼容镜像。
+
+## Git 强制保存
+
+任何 Agent 修改文件后，必须提交本次任务变更，除非用户明确说不要提交：
+
+```bash
+python tools/git_guard.py status
+python tools/git_guard.py pre-final
+python tools/git_guard.py commit --message "type: summary" --paths <task-owned-files>
+```
+
+只暂存本次任务拥有的文件，不要提交用户已有改动、本地设置或无关生成物。
 
 ## AI 接手上下文（必读）
 
@@ -18,18 +38,20 @@
 - `.context/version.*`：工具链、生成代码边界、关键脚本和兼容性状态
 - `.context/runtime.*`：最近一次构建/烧录/验证状态和当前已知运行问题
 
-所有开发类 Skill 的必读顺序：
+所有开发类 Agent/Skill 的必读顺序：
 
 ```text
-.context/* → .workflow/project.yaml → 需求.md → 相关源码
+AGENTS.md → .context/* → .agents/rules/* → .workflow/project.yaml → 需求.md → 相关源码
 ```
 
 强制规则：
 
-- 开始 `/dev`、`/build`、`/verify`、`/driver-dev`、`/code-reviewer` 前，先运行 `python tools/context.py summary`。
+- 开始 `/dev`、`/build`、`/verify`、`/driver-dev`、`/code-reviewer` 或等价 Agent 流程前，先运行 `python tools/context.py summary`。
+- 修改文件前运行 `python tools/git_guard.py status`，识别已有脏文件。
 - 涉及构建、烧录、验证证据变化后，运行 `python tools/context.py touch-runtime` 更新运行快照。
 - 口头描述不能覆盖 `.context/` 中已记录事实；若事实变化，先更新上下文，再继续实现。
 - 如果上下文缺失或 `python tools/context.py validate` 失败，必须先报告缺失项，不要靠猜继续。
+- 修改文件后必须按 `.agents/rules/git.md` 暂存并提交本次任务变更，除非用户明确说不要提交。
 
 ## ⚠️ 需求驱动开发强制规范
 
@@ -79,6 +101,27 @@
 ---
 
 ## 分层架构（必须遵循）
+
+### 架构不变量
+
+`App/`、`Service/`、`Driver/` 是本工程框架的稳定分层，不随 Windows/Linux、Keil/GCC/CMake、Claude/Codex/其他 Agent 或 IDE 变化。
+
+- 换主机平台或构建工具：只改 `.workflow/project.yaml`、`tools/workflow.py` 或工具链 adapter
+- 换 MCU/开发板：可以改 `Driver` 内部实现、HAL 绑定和硬件上下文，但不得破坏 App/Service/Driver 的依赖契约
+- `Core/`、`Drivers/`、`.ioc` 和工具工程文件属于平台/厂商生成边界，不承载业务分层架构
+- 只有明确的架构重构任务才允许改变 App/Service/Driver 的职责边界
+
+### 目录边界
+
+| 类别 | 目录/文件 | 规则 |
+|------|-----------|------|
+| 工程稳定目录 | `App/`, `Service/`, `Driver/`, `Test/` | 随工程框架长期保留，不因 OS、IDE、工具链或 Agent 改名/搬迁 |
+| 工程事实目录 | `docs/`, `.context/`, `.workflow/`, `.agents/` | 记录项目知识、AI 接手事实、工具配置、Agent 规则和 canonical Skills，是可接手工程的一部分 |
+| 工程工具目录 | `tools/`, `reports/` | `tools/` 执行确定性动作，`reports/` 保存当前证据快照 |
+| 平台生成边界 | `Core/`, `Drivers/`, `very_test.ioc` | 随 MCU、CubeMX、HAL/vendor 包变化 |
+| 工具适配边界 | `MDK-ARM/`, `.vscode/`, `.claude/` | 随 IDE、本地环境或可选 Agent adapter 变化 |
+
+换平台或工具链时，优先修改 `.workflow/project.yaml`、`tools/workflow.py` 和 adapter；不要移动工程稳定目录。
 
 ### 四层结构
 
@@ -131,7 +174,13 @@ Breathe_App_Init();    // 3. App层最后
 
 ### 目录结构规范（复制工程时必须遵守）
 
-**生成代码前必须读取 `.project_structure` 文件**
+**生成代码前必须读取 `.project_structure` 文件。该文件由 `.context/engineering.yaml` 和 `.workflow/project.yaml` 生成，不要手写维护。**
+
+刷新命令：
+
+```bash
+python tools/workflow.py structure
+```
 
 分层代码的物理位置：
 
@@ -259,19 +308,23 @@ Breathe_App_Init();    // 3. App层最后
 | `[doc]` | 规范文档合并、重写 |
 | `[arch]` | 架构规则调整 |
 
-## 审查报告输出规范
+## 报告输出规范
 
-**所有审查类 Skill 的报告必须输出到 `reports/` 目录。**
+**所有 Agent、Skill、脚本报告必须输出到 `reports/` 目录。`reports/` 是当前证据快照目录，不是历史归档目录。**
 
-| Skill | 报告文件 |
-|-------|---------|
+| 类型 | 固定文件 |
+|------|----------|
+| build | `reports/build_log.txt` |
+| flash | `reports/flash_log.txt` |
 | `/check-req` | `reports/check_req_report.md` |
 | `/code-reviewer` | `reports/code_review_report.md` |
 | `/verify` | `reports/verify_report.md` |
 
-- 报告文件不纳入 git 跟踪（可加入 `.gitignore`）
-- 各 Skill 脚本和 Skill 定义中的默认路径必须指向 `reports/`
-- `dev_orchestrator.py` 读取报告时同样从 `reports/` 读取
+- 每类报告使用固定文件名，默认覆盖旧报告
+- 禁止默认生成时间戳报告、`*_final.md`、`*_new.md` 等散乱文件
+- 历史结论写入 `PROJECT_LOG.md`；工程结构变化写入 `EVOLUTION.md`
+- 只有用户明确要求归档时，才允许复制到 `reports/archive/`
+- 各脚本和 Agent 流程中的默认路径必须指向 `reports/`
 
 ## Git Commit 粒度（改 bug 时特别重要）
 

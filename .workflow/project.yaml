@@ -18,11 +18,11 @@ toolchain:
 
 build:
   hex_path: MDK-ARM/very_test/very_test.hex
-  log_path: tools/build_log.txt
+  log_path: reports/build_log.txt
 
 flash:
   method: keil
-  log_path: tools/flash_log.txt
+  log_path: reports/flash_log.txt
 
 serial:
   port: auto
@@ -45,11 +45,11 @@ layout:
 #   test_command: make TEST_MODE=1
 #   elf_path: build/firmware.elf
 #   hex_path: build/firmware.hex
-#   log_path: tools/build_log.txt
+#   log_path: reports/build_log.txt
 # flash:
 #   method: command
 #   command: openocd -f interface/stlink.cfg -f target/stm32f1x.cfg -c "program build/firmware.elf verify reset exit"
-#   log_path: tools/flash_log.txt
+#   log_path: reports/flash_log.txt
 #
 # CMake project:
 # toolchain:
@@ -65,7 +65,7 @@ layout:
 #   test_target: all
 #   elf_path: build/firmware.elf
 #   hex_path: build/firmware.hex
-#   log_path: tools/build_log.txt
+#   log_path: reports/build_log.txt
 # flash:
 #   method: command
 #   command: openocd -f interface/stlink.cfg -f target/stm32f1x.cfg -c "program build/firmware.elf verify reset exit"
