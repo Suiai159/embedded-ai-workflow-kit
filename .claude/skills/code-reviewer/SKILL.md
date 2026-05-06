@@ -1,160 +1,92 @@
 # Code Reviewer SubAgent
 
-专门的代码审查助手，用于分析嵌入式 C 代码的安全性、质量和需求符合性。
+专门的嵌入式代码审查助手，通过 AI 直接分析源代码，完成硬件配置验证与代码逻辑安全检查。
 
 ## 执行命令
 
 当用户调用 `skill: code-reviewer` 时，执行：
 
-```bash
-python tools/code_reviewer.py {{args}}
+```
+Agent: code-reviewer
+Prompt: 见下方「调用 Prompt」
 ```
 
 ## 调用方式
 
-### 方式 1: 直接调用 Skill
+### 方式 1: 直接调用 Skill（默认全查）
 ```
 skill: code-reviewer
-args: <文件路径或目录>
+args: Core/Src/main.c Driver/tim_driver.c Service/ App/
 ```
 
-### 方式 2: 主 Agent 通过 subAgent 调用
+### 方式 2: 侧重硬件配置审查
+```
+skill: code-reviewer
+args: --focus=hw Core/Src Driver/
+```
+
+### 方式 3: 侧重代码逻辑安全审查
+```
+skill: code-reviewer
+args: --focus=logic App/ Service/
+```
+
+### 方式 4: 主 Agent 直接通过 subAgent 调用
 ```
 Agent: code-reviewer
-Prompt: 请审查 Core/Src/main.c 文件，检查安全问题和需求符合性
+Prompt: 请审查 Core/Src/main.c 和 Driver/tim_driver.c，关注 TIM2 时钟配置和 ISR 安全
 ```
 
-## 功能范围
+## 参数说明
 
-### 1. 安全检查
-| 检查项 | 说明 |
-|--------|------|
-| ISR 安全 | 检测中断服务程序中的阻塞操作 |
-| 死循环超时 | 检查无超时的轮询等待 |
-| 栈溢出风险 | 检测大 Buffer 的局部变量分配 |
-| 外设初始化 | 验证时钟使能配置 |
-| FreeRTOS 任务 | 检查任务是否正确让出 CPU |
+| 参数 | 说明 |
+|------|------|
+| `--focus=hw` | 只查硬件配置（引脚、时钟、外设结构体、DMA 参数等） |
+| `--focus=logic` | 只查代码逻辑（ISR 安全、死循环、栈溢出、算法逻辑等） |
+| 无参数或 `--focus=all` | 全查（默认） |
 
-### 2. 需求符合性检查
-| 检查项 | 说明 |
-|--------|------|
-| GPIO 配置 | 验证引脚配置是否符合需求 |
-| PWM/定时器 | 验证频率、占空比配置 |
-| 算法实现 | 验证呼吸算法、波形生成等 |
-| 时序要求 | 验证延时、周期是否符合 |
+## 输入源
 
-### 3. 代码质量检查
-| 检查项 | 说明 |
-|--------|------|
-| 代码规范 | 命名规范、缩进风格 |
-| 注释完整性 | 关键逻辑是否有注释 |
-| 魔法数字 | 检测未命名的常量 |
-| 资源释放 | 检查是否有内存/资源泄漏 |
+审查前必须读取以下文件作为输入：
+1. **AI 接手上下文摘要**：运行 `python tools/context.py summary`
+2. **工程上下文**：`.context/engineering.yaml`
+3. **硬件上下文**：`.context/hardware.yaml`
+4. **待审查的源代码文件**（由 args 指定）
+5. **需求文档**：`需求.md`（若存在）
 
-## 输出格式
+## 输出
 
-生成结构化的审查报告：
+生成结构化审查报告，保存到 `reports/code_review_report.md`。
 
-```markdown
-# 代码审查报告
-
-## 概要
-- 检查文件: 3 个
-- 发现问题: 5 个（严重: 1, 警告: 2, 建议: 2）
-- 需求符合度: 85%
-
-## 详细发现
-
-### 🔴 [严重] ISR 中调用阻塞函数
-**文件**: Core/Src/interrupt.c:45
-**问题**: HAL_Delay() 在中断服务程序中被调用
-**风险**: 阻塞整个系统中断响应
-**修复建议**: 使用标志位 + 主循环处理
-
-### 🟡 [警告] 死循环缺少超时
-...
-
-### 💡 [建议] 建议使用宏定义替代魔法数字
-...
-
-## 需求符合性分析
-
-| 需求项 | 状态 | 说明 |
-|--------|------|------|
-| PC13 引脚配置 | ✅ | 已正确配置为输出模式 |
-| PWM 100Hz | ⚠️ | 实际 50Hz，建议调整分频系数 |
-| 呼吸周期 8s | ❌ | 未实现，当前为固定频率 |
-```
+报告包含：
+- 概要（文件数、问题数、需求符合度）
+- 硬件配置检查项（按外设分类）
+- 代码逻辑安全检查项
+- 需求符合性分析
+- 优先级修复列表
 
 ## 工作流程
 
 ```
 主 Agent                   Code Reviewer SubAgent
    │                              │
-   │── 1. 调用 subAgent 审查代码 ──▶│
-   │   (提供文件路径和需求信息)     │
+   │── 1. 调用 Skill / subAgent ──▶│
+   │   (提供文件路径 + focus 参数)  │
    │                              │
-   │                              ├── 2. 扫描源代码
-   │                              ├── 3. 执行安全检查
-   │                              ├── 4. 验证需求符合性
-   │                              ├── 5. 生成审查报告
+   │                              ├── 2. 读取需求.md（若存在）
+   │                              ├── 3. 读取所有待审查文件
+   │                              ├── 4. 逐文件逐条审查规则
+   │                              ├── 5. 跨文件关联检查（时钟/引脚）
+   │                              ├── 6. 生成结构化报告
    │                              │
-   │◀─ 6. 返回结构化报告 ──────────│
+   │◀─ 7. 返回报告路径 ───────────│
    │                              │
-   │── 7. 根据报告决策修复方案     │
-   │                              │
-```
-
-## 使用示例
-
-### 示例 1: 审查单个文件
-```
-请审查 Core/Src/main.c，关注：
-1. 是否有死循环等待
-2. GPIO 配置是否符合需求
-```
-
-### 示例 2: 审查整个项目
-```
-请审查 Core/Src 目录下的所有代码，生成完整报告。
-```
-
-### 示例 3: 针对特定需求的审查
-```
-请审查 PWM 相关代码，验证：
-- 频率是否达到 100Hz
-- 占空比范围是否为 0-100%
-- 是否实现了呼吸算法
-```
-
-## 配置
-
-在 `tools/code_reviewer_config.json` 中配置：
-
-```json
-{
-  "source_dirs": ["Core/Src", "User/Src"],
-  "exclude_dirs": ["Middlewares", "Drivers"],
-  "isr_functions": [
-    "HAL_GPIO_EXTI_Callback",
-    "HAL_TIM_PeriodElapsedCallback",
-    "HAL_UART_RxCpltCallback"
-  ],
-  "max_stack_buffer": 256,
-  "check_rules": {
-    "isr_blocking": true,
-    "infinite_loop": true,
-    "stack_usage": true,
-    "magic_number": true,
-    "gpio_config": true,
-    "pwm_config": true
-  }
-}
+   │── 8. 主 Agent 决策修复方案   │
 ```
 
 ## 注意事项
 
 1. **Code Reviewer 只负责分析，不修改代码**
-2. **主 Agent 负责决策** - 哪些问题需要修复、如何修复
-3. **复杂场景需要人工确认** - 如特定的时序要求
-4. **报告使用结构化格式** - 便于主 Agent 解析和处理
+2. **主 Agent 负责决策** — 哪些问题需要修复、如何修复
+3. **AI 直接读文件做语义分析**，不依赖正则脚本
+4. 旧版 Python 脚本 `tools/code_reviewer.py` 保留作为 CI/CD 无 AI 环境的兜底方案

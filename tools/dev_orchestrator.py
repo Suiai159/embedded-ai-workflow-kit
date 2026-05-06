@@ -13,17 +13,25 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
+from workflow import cfg_get, find_project_root, load_config
+
 if sys.platform == 'win32':
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
+PROJECT_ROOT = find_project_root()
+CONFIG = load_config(PROJECT_ROOT)
+REPORT_DIR = Path(str(cfg_get(CONFIG, "layout.reports", "reports")))
+DRIVER_DIR = Path(str(cfg_get(CONFIG, "layout.driver", "Driver")))
+TEST_DIR = Path(str(cfg_get(CONFIG, "layout.test", "Test")))
+
 PROJECT_LOG = Path("PROJECT_LOG.md")
-BUILD_LOG = Path("tools/build_log.txt")
+BUILD_LOG = Path(str(cfg_get(CONFIG, "build.log_path", "tools/build_log.txt")))
 REPORT_FILES = {
-    "code_review": Path("reports/code_review_report.md"),
-    "verify": Path("reports/verify_report.md"),
-    "check_req": Path("reports/check_req_report.md"),
+    "code_review": REPORT_DIR / "code_review_report.md",
+    "verify": REPORT_DIR / "verify_report.md",
+    "check_req": REPORT_DIR / "check_req_report.md",
 }
 
 # ============================================================
@@ -122,6 +130,9 @@ def check_build_status():
     if not BUILD_LOG.exists():
         return "unknown", "无编译记录"
     log = BUILD_LOG.read_text(encoding='utf-8', errors='ignore')
+    generic_exit = re.findall(r'\[workflow\] exit_code=(\d+)', log)
+    if generic_exit:
+        return ("success", "编译成功") if int(generic_exit[-1]) == 0 else ("failed", f"编译失败: exit_code={generic_exit[-1]}")
     # Keil 编译成功通常包含 0 Error(s)
     errors = re.findall(r'(\d+) Error\(s\)', log)
     warnings = re.findall(r'(\d+) Warning\(s\)', log)
@@ -145,9 +156,9 @@ def check_code_review():
 
 def check_driver_state(name):
     """检查 driver-dev 任务的当前状态"""
-    driver_c = Path(f"Driver/{name}_driver.c")
-    driver_h = Path(f"Driver/{name}_driver.h")
-    test_c = Path(f"Test/{name}_driver_test.c")
+    driver_c = DRIVER_DIR / f"{name}_driver.c"
+    driver_h = DRIVER_DIR / f"{name}_driver.h"
+    test_c = TEST_DIR / f"{name}_driver_test.c"
 
     if not driver_c.exists():
         return "missing", "驱动源文件不存在"
@@ -209,7 +220,7 @@ def determine_next_step():
             if review_status == "none":
                 return {
                     "action": "code-reviewer",
-                    "args": f"Driver/{name}_driver.c Test/{name}_driver_test.c",
+                    "args": f"{DRIVER_DIR}/{name}_driver.c {TEST_DIR}/{name}_driver_test.c",
                     "reason": "驱动已生成，需要代码审查",
                     "task": task
                 }

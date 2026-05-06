@@ -1,7 +1,7 @@
 ---
 schema: skill-1.0
 name: verify
-description: 验证嵌入式代码是否满足需求 - 先检查一致性，再编译烧录，最后通过串口测试自动验证，测试失败时调用AI Agent智能修复
+description: 验证嵌入式代码是否满足需求 - 编译带 TEST_MODE 的测试固件，烧录后固件自动运行测试并输出结构化 JSON，Agent 读取串口 JSON 解析结果，测试失败时调用 AI Agent 智能修复
 parameters:
   - name: req_file
     type: string
@@ -36,25 +36,47 @@ user-invocable: true
 
 ## 执行流程
 
+### 上下文检查
+
+验证前先运行：
+
+```bash
+python tools/context.py validate
+python tools/context.py summary
+```
+
+如果上下文缺失或硬件/工程事实冲突，先报告问题，不要继续猜测运行环境。
+
+### 固件自验证机制
+
+验证不再采用"Agent 发命令 → 固件响应"的交互模式，而是**固件自动运行测试、输出结构化 JSON**，Agent 只需读取串口解析结果。
+
+```
+编译(TEST_MODE) → 烧录 → 固件自动跑测试 → 串口输出 JSON → Agent 解析 → 报告
+```
+
+固件测试代码位于 `App/test_*.h`，通过 `#ifdef TEST_MODE` 条件编译。正常固件不包含测试代码。
+
 ### 模式 A：test-only（单次测试，不自动修复）
 
 1. 执行：`python .claude/skills/verify/verify.py --test-only --req <req_file>`
-2. 读取结果和 `reports/verify_report.md`
+2. 内部流程：
+   - `python tools/workflow.py build --test` 编译带 TEST_MODE 的测试固件
+   - `python tools/workflow.py flash` 烧录测试固件
+   - 打开串口，等待 `===TEST_BEGIN===` 标记
+   - 读取 JSON 测试结果直到 `===TEST_END===`
+   - 生成 `reports/verify_report.md`
 3. 展示报告，结束
 
 ### 模式 B：完整 AI 闭环（默认）
 
 **步骤 1：单次验证**
 - 运行：`python .claude/skills/verify/verify.py --single-run --max-retries 0 --req <req_file> [--port <port>]`
-- `verify.py` 内部执行：解析需求 → 编译 → 烧录 → 串口测试 → 生成 `reports/verify_report.md`
+- 编译(TEST_MODE) → 烧录 → 读取固件 JSON 输出 → 生成 `reports/verify_report.md`
 
 **步骤 2：结果判断**
-- **Exit code == 0**：验证通过
-  - 读取 `reports/verify_report.md`
-  - 向用户展示成功结果和测试统计
-  - 结束
-
-- **Exit code != 0**：验证失败，进入 AI 修复循环
+- **Exit code == 0**：验证通过 → 展示结果，结束
+- **Exit code != 0**：验证失败 → 进入 AI 修复循环
 
 **步骤 3：AI 修复循环**
 
@@ -83,7 +105,7 @@ while retry_count < max_retries:
        - 修改必须最小化
 
        ## 测试失败信息
-       <从 reports/verify_report.md 提取的失败用例：id, input, expected, actual, error>
+       <从 reports/verify_report.md 提取的失败用例：id, desc, check, expected, actual>
 
        ## 相关代码
        <附上读取到的代码文件内容>
@@ -112,21 +134,50 @@ while retry_count < max_retries:
 - **prompt**: 按上述模板构建，包含完整的失败信息和代码内容
 - **description**: "修复嵌入式测试失败"
 
-## 测试用例格式
+## 测试架构
 
-需求文档中需包含测试用例章节，格式如下：
+### 固件侧（`App/test_*.h`）
 
-```markdown
-## 测试用例
+测试代码写在固件中，通过 `#ifdef TEST_MODE` 条件编译：
 
-### TC001: LED控制测试
-- **输入**: `LED ON`
-- **预期输出**: `LED is ON`
-- **匹配模式**: contains
-- **超时**: 1000ms
+```c
+// App/test_breathe.h
+static inline void Test_Breathe_Run(void) {
+    uint32_t start = HAL_GetTick();
+    TestSuite_Start("breathe_test", 5);
+
+    // TC001: 检查 LED 初始模式
+    LED_Mode_t mode = LED_Service_GetMode();
+    TestCase_ReportStr("TC001", "LED初始模式", "LED_MODE",
+                       "BREATHE", LED_ModeToStr(mode),
+                       (mode == LED_MODE_BREATHE) ? TEST_PASS : TEST_FAIL);
+
+    // TC002: 检查 PWM 占空比...
+    TestCase_ReportNum("TC002", ...);
+
+    TestSuite_End(start);
+}
 ```
 
-匹配模式支持：`exact`（精确）、`contains`（包含）、`regex`（正则）、`range`（数值范围）。
+测试框架 API：
+- `TestSuite_Start(suite_id, count)` — 输出测试套件开始 JSON
+- `TestCase_ReportNum(id, desc, check, expected, actual, tolerance)` — 数值比对（带容差）
+- `TestCase_ReportStr(id, desc, check, expected, actual, result)` — 字符串比对
+- `TestSuite_End(start_tick)` — 输出测试套件结束 JSON
+
+### JSON 输出协议
+
+```
+===TEST_BEGIN===
+{"type":"suite","action":"start","id":"breathe_test","count":5}
+{"type":"test","id":"TC001","desc":"LED初始模式","check":"LED_MODE","expected":"BREATHE","actual":"BREATHE","result":"PASS"}
+{"type":"test","id":"TC002","desc":"PWM占空比","check":"PWM_DUTY","expected":0,"actual":0,"result":"PASS"}
+...
+{"type":"suite","action":"end","passed":5,"failed":0,"skipped":0,"duration_ms":523}
+===TEST_END===
+```
+
+`===TEST_BEGIN===` / `===TEST_END===` 标记用于隔离 log_service 的初始化日志。
 
 ## 配置文件
 
@@ -153,9 +204,11 @@ validation:
 - 失败原因分析
 - 自动修复历史记录
 
+验证脚本结束后会调用 `python tools/context.py touch-runtime` 刷新 `.context/runtime.yaml`。
+
 ## 依赖
 
 - Python 3.8+
 - pyserial, pyyaml
-- Keil MDK（编译）
+- `.workflow/project.yaml` 中声明的工具链（支持 Keil、GCC 命令式构建、CMake）
 - ST-Link/J-Link（烧录）

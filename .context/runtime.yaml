@@ -1,0 +1,33 @@
+schema: context-runtime-1.0
+context_kind: runtime
+status:
+  handoff_state: dirty_worktree
+  last_known_build: pass
+  last_known_flash: fail
+  last_known_verify: fail
+  updated_at: '2026-05-06 19:45:50'
+last_build:
+  result: pass
+  evidence: tools/build_log.txt
+  summary: Build log reports 0 Error(s).
+last_flash:
+  result: fail
+  evidence: tools/flash_log.txt
+  summary: Flash log indicates failure.
+last_verify:
+  result: fail
+  evidence: reports/verify_report.md
+  summary: '解析需求文档失败: ''gbk'' codec can''t encode character ''\u2713'' in position
+    2: illegal multibyte sequence'
+serial:
+  port: auto
+  baudrate: 115200
+known_issues:
+- id: VERIFY_FAILED
+  status: open
+  evidence: reports/verify_report.md
+  summary: '解析需求文档失败: ''gbk'' codec can''t encode character ''\u2713'' in position
+    2: illegal multibyte sequence'
+handoff_notes:
+- The repository has uncommitted changes from workflow and verification work.
+- Runtime context is a current snapshot, not a historical log.

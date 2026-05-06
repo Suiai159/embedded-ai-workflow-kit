@@ -1,59 +1,25 @@
 ---
 name: build
-description: Compile the Keil project (MDK-ARM/very_test.uvprojx) using tools/build_keil.sh
+description: Build the configured embedded project through tools/workflow.py. Use for compiling firmware regardless of the board name or development tool; adapters include Keil, GCC command, and CMake.
 user-invocable: true
 ---
 
-# /build — Compile Keil Project
+# /build
 
-Compile the Keil project by executing `tools/build_keil.sh`.
-
-## Project Structure
-
-- **Project file:** `MDK-ARM/very_test.uvprojx`
-- **Build script:** `tools/build_keil.sh`
-- **Build log:** `tools/build_log.txt`
-- **Output:** `MDK-ARM/very_test/very_test.hex`
+Build the project described by `.workflow/project.yaml`.
 
 ## Steps
 
-### 1. Check Requirement Consistency
+1. Run `python tools/context.py validate`; if it fails, show the missing/stale context and stop.
+2. Run `python tools/context.py summary` and use it as the project handoff facts.
+3. Run `skill: check-req` before building.
+4. If requirement consistency passes, run `python tools/workflow.py build`.
+5. If the user requests test firmware, run `python tools/workflow.py build --test`.
+6. Read the configured build log from `.workflow/project.yaml` when the build fails.
+7. `tools/workflow.py` refreshes `.context/runtime.yaml` after build.
 
-**Before building, MUST run:** `skill: check-req`
+## Rules
 
-- If check-req PASSED (all consistent): Continue to build
-- If check-req FAILED (inconsistencies found):
-  - Show inconsistency report
-  - STOP and ask user to run `/sync-req` to fix
-  - Do NOT proceed with build
-
-### 2. Execute Build
-
-Run: `bash tools/build_keil.sh`
-
-### 2. Analyze Result
-
-**If build SUCCESS:**
-- Show hex file size
-- Stop here
-
-**If build FAILED:**
-- Read `tools/build_log.txt`
-- Analyze errors and attempt fixes
-
-### 3. Auto-Fix Patterns
-
-- Syntax errors (missing semicolons, brackets)
-- Undefined variables/functions
-- Missing includes
-- Type mismatches
-
-### 4. Retry
-
-After fixes, re-run build script.
-
-## Expected Output
-
-- Build log
-- Success/failure status
-- Fix summary (if any changes made)
+- Do not hard-code project names, board names, Keil paths, or hex paths.
+- Treat `tools/workflow.py` as the build adapter boundary.
+- Supported adapters: `toolchain.type: keil`, `gcc`, and `cmake`.

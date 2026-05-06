@@ -20,6 +20,10 @@
 
 #include <stdint.h>
 
+#ifdef TEST_MODE
+#include "test_breathe.h"
+#endif
+
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
@@ -71,10 +75,23 @@ int main(void)
 
     /* Infinite loop */
     /* USER CODE BEGIN WHILE */
+#ifdef TEST_MODE
+    HAL_Delay(500);  /* Wait for init logs to flush */
+    Test_Breathe_Run();
+    while (1)
+    {
+        /* Test complete - fast blink to indicate alive */
+        LED_Service_SetMode(LED_MODE_ON);
+        HAL_Delay(100);
+        LED_Service_SetMode(LED_MODE_OFF);
+        HAL_Delay(100);
+    }
+#else
     while (1)
     {
         System_Loop();
     }
+#endif
     /* USER CODE END 3 */
 }
 

@@ -1,21 +1,15 @@
 ---
 name: bf
-description: Build and Flash Keil project — compile then download to STM32
+description: Build and flash the configured embedded project through the reusable workflow CLI.
 user-invocable: true
 ---
 
-# /bf — Build and Flash Keil Project
+# /bf
 
-Compile the project, then flash to STM32 if build succeeds.
+Build the configured project, then flash it if the build succeeds.
 
 ## Steps
 
-1. Execute `bash tools/build_keil.sh` to compile
-2. If build successful, execute `bash tools/flash_keil.sh`
-3. If build failed, stop and report error
-
-## Expected Output
-
-- Build log with error/warning count
-- Flash progress and result
-- Combined success/failure status
+1. Run `python tools/workflow.py build`.
+2. If the build succeeds, run `python tools/workflow.py flash`.
+3. If either step fails, read the configured log path from `.workflow/project.yaml` and report the useful error lines.

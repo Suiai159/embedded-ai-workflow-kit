@@ -1,5 +1,36 @@
 # 项目开发规范
 
+## 可复用工作流入口
+
+本工程的板子、工具链、工程文件、hex 输出、串口和目录布局统一声明在 `.workflow/project.yaml`。
+
+- Skill 只负责编排流程，不直接硬编码板子、工程名、Keil 路径或 hex 路径。
+- 构建、烧录、工程文件注册等确定性动作统一通过 `python tools/workflow.py ...` 执行。
+- 当前支持 `toolchain.type: keil`、`gcc`、`cmake`；新增工具链时优先扩展 `tools/workflow.py`，不要复制一套新的 Skill。
+- 旧入口 `tools/build_keil.sh`、`tools/flash_keil.sh` 保留为兼容 wrapper。
+
+## AI 接手上下文（必读）
+
+本工程的接手事实源集中在 `.context/`：
+
+- `.context/engineering.*`：工程结构、分层规则、初始化现实、AI 修改约束
+- `.context/hardware.*`：MCU、时钟、引脚、外设、资源所有权、信号极性
+- `.context/version.*`：工具链、生成代码边界、关键脚本和兼容性状态
+- `.context/runtime.*`：最近一次构建/烧录/验证状态和当前已知运行问题
+
+所有开发类 Skill 的必读顺序：
+
+```text
+.context/* → .workflow/project.yaml → 需求.md → 相关源码
+```
+
+强制规则：
+
+- 开始 `/dev`、`/build`、`/verify`、`/driver-dev`、`/code-reviewer` 前，先运行 `python tools/context.py summary`。
+- 涉及构建、烧录、验证证据变化后，运行 `python tools/context.py touch-runtime` 更新运行快照。
+- 口头描述不能覆盖 `.context/` 中已记录事实；若事实变化，先更新上下文，再继续实现。
+- 如果上下文缺失或 `python tools/context.py validate` 失败，必须先报告缺失项，不要靠猜继续。
+
 ## ⚠️ 需求驱动开发强制规范
 
 ### 唯一真相源

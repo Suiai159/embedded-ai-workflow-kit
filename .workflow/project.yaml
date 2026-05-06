@@ -1,0 +1,71 @@
+project:
+  name: very_test
+
+board:
+  name: STM32F103 template board
+
+mcu:
+  family: STM32F1xx
+  device: STM32F103C8
+
+toolchain:
+  type: keil
+  project_file: MDK-ARM/very_test.uvprojx
+  exe: D:/Keil5/UV4/UV4.exe
+  groups:
+    driver: Driver
+    test: Test
+
+build:
+  hex_path: MDK-ARM/very_test/very_test.hex
+  log_path: tools/build_log.txt
+
+flash:
+  method: keil
+  log_path: tools/flash_log.txt
+
+serial:
+  port: auto
+  baudrate: 115200
+
+layout:
+  app: App
+  service: Service
+  driver: Driver
+  test: Test
+  reports: reports
+
+# Adapter examples for future projects:
+#
+# GCC / Make-style project:
+# toolchain:
+#   type: gcc
+# build:
+#   command: make
+#   test_command: make TEST_MODE=1
+#   elf_path: build/firmware.elf
+#   hex_path: build/firmware.hex
+#   log_path: tools/build_log.txt
+# flash:
+#   method: command
+#   command: openocd -f interface/stlink.cfg -f target/stm32f1x.cfg -c "program build/firmware.elf verify reset exit"
+#   log_path: tools/flash_log.txt
+#
+# CMake project:
+# toolchain:
+#   type: cmake
+#   source_dir: .
+#   build_dir: build
+#   generator: Ninja
+#   build_type: Debug
+#   configure_args: -DCMAKE_TOOLCHAIN_FILE=cmake/arm-none-eabi.cmake
+#   test_configure_args: -DTEST_MODE=ON
+# build:
+#   target: all
+#   test_target: all
+#   elf_path: build/firmware.elf
+#   hex_path: build/firmware.hex
+#   log_path: tools/build_log.txt
+# flash:
+#   method: command
+#   command: openocd -f interface/stlink.cfg -f target/stm32f1x.cfg -c "program build/firmware.elf verify reset exit"

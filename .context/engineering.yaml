@@ -1,0 +1,71 @@
+schema: context-engineering-1.0
+context_kind: engineering
+source_of_truth:
+  workflow_config: .workflow/project.yaml
+  architecture_doc: docs/ARCHITECTURE.md
+  project_structure: .project_structure
+  requirement_doc: "\u9700\u6c42.md"
+
+layout:
+  app: App
+  service: Service
+  driver: Driver
+  test: Test
+  reports: reports
+  generated_core: Core
+  vendor_drivers: Drivers
+
+architecture:
+  layers:
+    - name: App
+      path: App
+      responsibility: business logic and algorithms without hardware dependency
+      allowed_dependencies: [Service, standard_c]
+      forbidden_dependencies: [Driver, HAL, Core, Drivers]
+    - name: Service
+      path: Service
+      responsibility: hardware feature abstraction and resource coordination
+      allowed_dependencies: [Driver, standard_c]
+      forbidden_dependencies: [App, HAL_direct_register_access]
+    - name: Driver
+      path: Driver
+      responsibility: low-level hardware access and HAL/register wrappers
+      allowed_dependencies: [HAL, CMSIS, standard_c]
+      forbidden_dependencies: [Service, App]
+    - name: HAL
+      path: [Core, Drivers]
+      responsibility: CubeMX generated platform code and vendor libraries
+      allowed_dependencies: [vendor_generated]
+      forbidden_dependencies: [manual_feature_logic]
+
+initialization:
+  entrypoint: Core/Src/main.c
+  function: System_Init
+  intended_order:
+    - low-level driver readiness
+    - service initialization
+    - app initialization
+  current_notes:
+    - LOG_Service_Init initializes UART_Driver internally.
+    - LED_Service_Init initializes GPIO and PWM service internally.
+    - PWM_Service_Init initializes GPIO and TIM driver internally.
+    - This differs from the ideal "all Driver_Init in System_Init" rule and should be reviewed before refactoring.
+
+ai_rules:
+  must_read_before_code_change:
+    - .context/engineering.yaml
+    - .context/hardware.yaml
+    - .context/version.yaml
+    - .context/runtime.yaml
+    - .workflow/project.yaml
+    - "\u9700\u6c42.md"
+  do_not_guess:
+    - hardware pin polarity
+    - timer clock and frequency math
+    - toolchain paths and output artifacts
+    - current runtime pass/fail state
+  update_when_changed:
+    - layout
+    - resource ownership
+    - toolchain or generated-code boundary
+    - verified runtime state

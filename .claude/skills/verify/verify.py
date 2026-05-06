@@ -36,6 +36,7 @@ class ValidationController:
 
     def __init__(self, config: Dict[str, Any], single_run: bool = False):
         self.config = config
+        self.project_root = Path(config.get('project_root', Path.cwd()))
         self.single_run = single_run
         self.parser = RequirementParser()
         self.executor = SerialTestExecutor(config.get('serial', {}))
@@ -146,10 +147,11 @@ class ValidationController:
         )
 
     def _build(self) -> bool:
-        """编译项目"""
+        """编译测试固件（带 TEST_MODE 宏）"""
         try:
             result = subprocess.run(
-                ['bash', 'tools/build_keil.sh'],
+                [sys.executable, 'tools/workflow.py', 'build', '--test'],
+                cwd=self.project_root,
                 capture_output=True,
                 text=True,
                 timeout=120
@@ -166,7 +168,8 @@ class ValidationController:
         """烧录固件"""
         try:
             result = subprocess.run(
-                ['bash', 'tools/flash_keil.sh'],
+                [sys.executable, 'tools/workflow.py', 'flash'],
+                cwd=self.project_root,
                 capture_output=True,
                 text=True,
                 timeout=60
@@ -180,55 +183,82 @@ class ValidationController:
             return False
 
     def _run_tests(self, test_cases: List[Dict]) -> List[Dict]:
-        """执行所有测试用例"""
+        """执行固件自验证测试：烧录后读取 JSON 输出"""
+        import json
+
         results = []
 
         with self.executor:
-            # 等待系统启动
-            time.sleep(self.config.get('test', {}).get('delay_after_reset_ms', 500) / 1000)
+            print("  等待测试开始标记...")
 
-            for tc in test_cases:
-                print(f"\n  测试 {tc['id']}: {tc['description']}")
-                print(f"    输入: {repr(tc['input'])}")
-                print(f"    预期: {tc['expected_pattern']}")
+            # 等待 ===TEST_BEGIN=== 标记
+            begin_found = False
+            start_time = time.time()
+            while time.time() - start_time < 10:
+                line = self.executor.receive_line(timeout=1.0)
+                if line == '===TEST_BEGIN===':
+                    begin_found = True
+                    break
 
-                # 清空缓冲区
-                self.executor.clear_buffer()
+            if not begin_found:
+                print("  ✗ 未收到 TEST_BEGIN 标记")
+                return [{
+                    'id': 'SYS',
+                    'description': '固件测试启动',
+                    'input': '',
+                    'expected': 'TEST_BEGIN',
+                    'actual': 'timeout',
+                    'passed': False,
+                    'error': '未收到测试开始标记，固件可能未正确编译为 TEST_MODE'
+                }]
 
-                # 发送命令
-                self.executor.send(tc['input'])
+            print("  ✓ 测试开始，读取 JSON 结果...")
 
-                # 等待输出
-                timeout = tc.get('timeout_ms', 2000) / 1000
-                actual_output = self.executor.receive_until(
-                    tc['expected_pattern'],
-                    timeout
-                )
+            # 读取 JSON 直到 ===TEST_END===
+            while time.time() - start_time < 30:
+                line = self.executor.receive_line(timeout=2.0)
 
-                # 比对结果
-                match_result = self.comparator.compare(
-                    actual_output,
-                    tc['expected_pattern'],
-                    tc.get('match_type', 'contains')
-                )
+                if not line:
+                    continue
 
-                result = {
-                    'id': tc['id'],
-                    'description': tc['description'],
-                    'input': tc['input'],
-                    'expected': tc['expected_pattern'],
-                    'actual': actual_output,
-                    'passed': match_result['passed'],
-                    'error': match_result.get('error'),
-                    'duration_ms': match_result.get('duration_ms', 0)
-                }
+                if line == '===TEST_END===':
+                    break
 
-                results.append(result)
+                try:
+                    data = json.loads(line)
+                    if data.get('type') == 'test':
+                        passed = data.get('result') == 'PASS'
+                        result = {
+                            'id': data['id'],
+                            'description': data.get('desc', ''),
+                            'input': data.get('check', ''),
+                            'expected': str(data.get('expected', '')),
+                            'actual': str(data.get('actual', '')),
+                            'passed': passed,
+                            'error': None if passed else str(data.get('actual', ''))
+                        }
+                        results.append(result)
 
-                if result['passed']:
-                    print(f"    ✓ 通过")
-                else:
-                    print(f"    ✗ 失败: {result['error']}")
+                        status = "✓" if passed else "✗"
+                        print(f"    {status} {data['id']}: {data.get('desc', '')}")
+
+                    elif data.get('type') == 'suite' and data.get('action') == 'end':
+                        passed_cnt = data.get('passed', 0)
+                        failed_cnt = data.get('failed', 0)
+                        print(f"  测试完成: {passed_cnt} 通过, {failed_cnt} 失败")
+                except json.JSONDecodeError:
+                    continue
+
+        if not results:
+            return [{
+                'id': 'SYS',
+                'description': '测试结果读取',
+                'input': '',
+                'expected': '测试用例结果',
+                'actual': '空',
+                'passed': False,
+                'error': '未读取到任何测试结果'
+            }]
 
         return results
 
@@ -312,6 +342,7 @@ def load_config(project_root: Path) -> Dict[str, Any]:
     config_path = project_root / 'verify_config.yaml'
 
     default_config = {
+        'project_root': str(project_root),
         'serial': {
             'port': 'auto',
             'baudrate': 115200,
@@ -329,6 +360,24 @@ def load_config(project_root: Path) -> Dict[str, Any]:
             'output_path': './reports/verify_report.md'
         }
     }
+
+    workflow_config_path = project_root / '.workflow' / 'project.yaml'
+    if workflow_config_path.exists():
+        tools_dir = project_root / 'tools'
+        if str(tools_dir) not in sys.path:
+            sys.path.insert(0, str(tools_dir))
+        try:
+            from workflow import cfg_get, load_config as load_workflow_config
+
+            workflow_config = load_workflow_config(project_root)
+            default_config['serial'].update({
+                'port': cfg_get(workflow_config, 'serial.port', default_config['serial']['port']),
+                'baudrate': cfg_get(workflow_config, 'serial.baudrate', default_config['serial']['baudrate']),
+            })
+            reports_dir = cfg_get(workflow_config, 'layout.reports', 'reports')
+            default_config['report']['output_path'] = f'./{reports_dir}/verify_report.md'
+        except Exception as e:
+            print(f"  ! workflow 配置读取失败，使用 verify 默认配置: {e}")
 
     if config_path.exists():
         with open(config_path, 'r', encoding='utf-8') as f:
@@ -350,15 +399,15 @@ def main():
     parser.add_argument('--test-only', action='store_true', help='只测试不修复')
     parser.add_argument('--single-run', action='store_true', help='单次运行，失败不重试，用于外部调度器控制循环')
     parser.add_argument('--port', help='串口端口')
-    parser.add_argument('--report', default='reports/verify_report.md', help='报告输出路径')
+    parser.add_argument('--report', help='报告输出路径')
 
     args = parser.parse_args()
 
     # 查找项目根目录
     project_root = Path.cwd()
     while project_root != project_root.parent:
-        if (project_root / 'tools' / 'build_keil.sh').exists() or \
-           (project_root / 'MDK-ARM' / 'very_test.uvprojx').exists():
+        if (project_root / '.workflow' / 'project.yaml').exists() or \
+           (project_root / 'tools' / 'workflow.py').exists():
             break
         project_root = project_root.parent
 
@@ -378,7 +427,17 @@ def main():
     result = controller.run(args.req)
 
     # 生成报告
-    controller.generate_report(result, args.report)
+    controller.generate_report(result, args.report or config.get('report', {}).get('output_path', 'reports/verify_report.md'))
+
+    context_tool = project_root / 'tools' / 'context.py'
+    if context_tool.exists():
+        subprocess.run(
+            [sys.executable, str(context_tool), 'touch-runtime'],
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
 
     # 返回状态码
     sys.exit(0 if result.passed else 1)

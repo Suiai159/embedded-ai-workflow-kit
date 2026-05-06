@@ -1,31 +1,20 @@
 ---
 name: flash
-description: Flash the compiled Keil project to STM32 using tools/flash_keil.sh
+description: Flash the configured embedded firmware through tools/workflow.py. Use for downloading compiled firmware without hard-coding board, hex, or tool paths; supports Keil and generic command flashing.
 user-invocable: true
 ---
 
-# /flash — Flash Keil Project to STM32
+# /flash
 
-Flash the compiled program to STM32 MCU.
-
-## Project Structure
-
-- **Build script:** `tools/build_keil.sh`
-- **Flash script:** `tools/flash_keil.sh`
-- **Hex file:** `MDK-ARM/very_test/very_test.hex`
+Flash the firmware artifact described by `.workflow/project.yaml`.
 
 ## Steps
 
-1. Check if hex file exists
-2. Run: `bash tools/flash_keil.sh`
+1. Confirm the configured hex exists, or ask the user to run `/build`.
+2. Run `python tools/workflow.py flash`.
+3. Read the configured flash log when flashing fails.
 
-## Prerequisites
+## Rules
 
-- Project must be compiled first
-- DAP/ST-Link debugger connected
-
-## Expected Output
-
-- Flash progress log
-- Erase/Programming/Verify status
-- Success/failure result
+- Do not hard-code the hex path, project name, board name, or debugger.
+- Treat `tools/workflow.py` as the flashing adapter boundary.

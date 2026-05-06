@@ -4,6 +4,57 @@
 
 ---
 
+## 2026-05-06
+
+### [tool] 新增可复用工作流适配层
+
+**目标**：把工程工作流从具体板子、Keil 路径和工程名中解耦，形成可迁移到不同开发平台和工具链的统一入口。
+
+**改造**：
+- [structure] 新增 `.workflow/project.yaml`，集中声明项目名、板卡、MCU、工具链、构建/烧录产物、串口和目录布局
+- [tool] 新增 `tools/workflow.py`，提供 `build`、`flash`、`register-driver`、`status`、`verify-config` 统一 CLI
+- [tool] `build_keil.sh`、`flash_keil.sh` 改为兼容 wrapper，实际逻辑转入 `workflow.py`
+- [tool] `driver_dev.py`、`dev_orchestrator.py` 改为读取 workflow 配置，不再硬编码 `Driver/Test/reports` 和 Keil 工程路径
+- [tool] 新增 Keil、GCC command、CMake 三类 adapter；GCC/CMake 当前作为跨平台预留入口
+- [skill] 更新 `/build`、`/flash`、`/bf`、`/driver-dev`、`/verify`，统一通过 workflow adapter 执行确定性动作
+
+### [structure] 新增 AI 可接手上下文体系
+
+**目标**：让换 AI、换平台或排查硬件问题时有稳定事实入口，减少靠对话历史和猜测继续开发。
+
+**改造**：
+- [structure] 新增 `.context/engineering.*`、`hardware.*`、`version.*`、`runtime.*` 四组上下文
+- [tool] 新增 `tools/context.py`，支持 `validate`、`summary`、`touch-runtime`
+- [tool] `workflow.py` 在 build/flash 后刷新 runtime，上报最新构建和烧录证据
+- [tool] `verify.py` 在验证报告生成后刷新 runtime，把失败状态写入 `.context/runtime.*`
+- [skill] 更新 `/dev`、`/build`、`/verify`、`/driver-dev`、`/code-reviewer`，要求先读取上下文摘要
+- [doc] 更新 `CLAUDE.md` 和 `README.md`，明确必读顺序：`.context/*` → `.workflow/project.yaml` → `需求.md` → 相关源码
+
+**当前状态**：
+- `python tools/context.py validate` 通过
+- `python tools/workflow.py verify-config` 可解析当前 Keil 配置
+- runtime 快照记录：build pass，flash fail（现有 `tools/flash_log.txt` 显示 Target DLL cancelled），verify fail（现有报告显示需求文档编码问题）
+
+---
+
+## 2026-04-20
+
+### [skill] 重构 `code-reviewer` 为 AI SubAgent 语义分析
+
+**问题**：旧版 `tools/code_reviewer.py` 用正则做静态分析，天花板太低：
+- 看不懂 `GPIO_InitTypeDef` 结构体字段赋值
+- 算不出 `TIM2->PSC=35, ARR=99` 的实际频率
+- 跨不了文件（时钟使能在 `main.c`，外设初始化在 `Driver/`）
+- DMA 循环模式、数据宽度对齐、缓冲区位置完全查不了
+
+**改造**：
+- `SKILL.md`：执行命令从 `python tools/code_reviewer.py` 改为 `Agent: code-reviewer` SubAgent 调用
+- `SYSTEM.md`：新增完整硬件配置审查知识库（GPIO/TIM/DMA/UART/ADC/SPI/I2C/时钟/NVIC），共 10 大检查模块
+- 支持 `--focus=hw` / `--focus=logic` 参数，硬件配置与代码逻辑可分阶段审查
+- 旧版 Python 脚本保留为 CI/CD 无 AI 环境的兜底方案
+
+---
+
 ## 2026-04-18
 
 ### [structure] 解耦分层目录与 CubeMX Core/ ✅ 已完成
@@ -31,6 +82,44 @@ very_test/
 ├── Drivers/          ← HAL 库
 └── MDK-ARM/
 ```
+
+---
+
+### [doc] 新增 `docs/reference/` 参考知识库
+
+**目标**：沉淀从 datasheet 提取的关键参数，实现跨平台复用。
+
+**内容**：
+- `gpio.md` — 端口映射、寄存器操作方式、电平极性
+- `timer.md` — TIM2 配置参数（72MHz、PSC=35、ARR=99、20kHz）
+- `uart.md` — 115200 波特率、128B 缓冲区、printf 重定向策略
+- `led.md` — PC13 低电平有效、软件 PWM 20kHz/100级
+- `platform-notes.md` — 迁移检查清单、已验证/待验证平台
+
+**用途**：
+- 换 MCU 时不用重新翻 datasheet
+- AI 生成新平台代码时的知识输入
+
+---
+
+## 2026-04-18
+
+### [skill] 重构 verify 为固件自验证框架
+
+**目标**：Agent 不再"发命令拷问"固件，而是固件自动跑测试、输出结构化 JSON，Agent 只负责读取解析。
+
+**改动**：
+- [structure] 新增 `App/test_framework.h` — 轻量 JSON 测试框架（`TestSuite_Start/ReportNum/ReportStr/End`）
+- [structure] 新增 `App/test_breathe.h` — breathe_app 自验证用例（5 个 TC：LED 模式、PWM 占空比、亮度、相位、模式切换）
+- [tool] 新增 `tools/inject_test_mode.py` — 临时向 uvprojx 注入 `TEST_MODE` 宏
+- [tool] `build_keil.sh` 支持 `--test` 参数，自动编译测试固件并恢复 uvprojx
+- [tool] `verify.py` 改为：编译(TEST_MODE) → 烧录 → 读取 `===TEST_BEGIN===` ... `===TEST_END===` JSON → 解析报告
+- [doc] 更新 `verify/SKILL.md` 描述和流程文档
+
+**设计要点**：
+- 测试代码全放 `.h` 文件（`static inline`），避免改 Keil 工程文件列表
+- `===TEST_BEGIN===` / `===TEST_END===` 标记隔离 log_service 初始化日志
+- `trap EXIT` 确保 uvprojx 异常时恢复
 
 ---
 

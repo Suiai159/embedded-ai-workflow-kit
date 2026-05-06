@@ -1,7 +1,7 @@
 ---
 schema: skill-1.0
 name: driver-dev
-description: 从零开发外设驱动——读取商家资料，生成Driver层代码和测试代码，并自动加入Keil工程。无需需求文档。
+description: 从零开发外设驱动——读取商家资料，生成Driver层代码和测试代码，并通过工作流适配器注册到当前工程。无需需求文档。
 parameters:
   - name: source
     type: string
@@ -21,7 +21,7 @@ user-invocable: true
 
 # /driver-dev — 外设驱动开发
 
-**从零写驱动 + 自动生成测试代码 + 自动注册 Keil 工程。**
+**从零写驱动 + 自动生成测试代码 + 自动注册当前工程。**
 
 这是个人项目/驱动开荒阶段的专用入口，**不依赖 `需求.md`**。你只需提供商家给的资料（datasheet、参考 C 代码、甚至 FPGA 代码），AI 会帮你提取关键信息并按本项目的四层架构规范生成 Driver 层代码。
 
@@ -46,6 +46,11 @@ user-invocable: true
 ```
 用户: /driver-dev @资料 --name xxx --interface SPI
         ↓
+0. 读取上下文
+   - 运行 `python tools/context.py validate`
+   - 运行 `python tools/context.py summary`
+   - 检查 `.context/hardware.yaml` 中的资源所有权，避免占用已有 GPIO/TIM/UART
+        ↓
 1. 启动 Driver Dev SubAgent
    - 读取用户提供的资料（PDF/代码/图片）
    - 提取关键信息：
@@ -62,10 +67,10 @@ user-invocable: true
 3. 生成测试代码
    - Test/xxx_driver_test.c (包含 xxx_Driver_Test() 函数)
         ↓
-4. 自动注册 Keil 工程
+4. 自动注册工程
    - 运行: python tools/driver_dev.py --name xxx --add-to-keil
-   - 把 driver.c 加入 "Driver" Group
-   - 把 test.c 加入 "Test" Group
+   - 由 `tools/workflow.py register-driver` 根据 `.workflow/project.yaml` 选择当前工具链适配器
+   - Keil adapter 会把 driver.c/test.c 加入配置声明的 Group；GCC/CMake 默认无需注册，也可配置 `register_driver.command`
         ↓
 5. 输出总结
    - 驱动接口说明
@@ -165,7 +170,7 @@ python tools/driver_dev.py --name {{name}} --skeleton
 ```
 以创建目录和确认文件路径。
 
-### Step 3: 注册 Keil 工程
+### Step 3: 注册工程文件
 代码生成后执行：
 ```bash
 python tools/driver_dev.py --name {{name}} --add-to-keil
@@ -194,4 +199,4 @@ python tools/driver_dev.py --name {{name}} --add-to-keil
 1. **不生成需求文档** — `/driver-dev` 专注于让硬件动起来，文档可在稳定后补
 2. **不自动修改 main.c** — 测试函数需要用户手动在 `main.c` 中调用
 3. **可能遇到待确认项** — 如果资料 OCR 不完整或时序模糊，会明确标出
-4. **Keil 工程自动更新** — 依赖 `tools/driver_dev.py` 修改 `.uvprojx`
+4. **工程文件自动更新** — 依赖 `tools/driver_dev.py` 调用 `tools/workflow.py register-driver`，不在 Skill 中硬编码 Keil 路径
