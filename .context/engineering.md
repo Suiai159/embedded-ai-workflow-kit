@@ -10,10 +10,11 @@ The workflow and layout facts live in `.workflow/project.yaml`. Do not duplicate
 
 ## Architecture Rules
 
-- `App/`, `Service/`, and `Driver/` are project framework layers. They are not owned by Windows/Linux, Keil/GCC/CMake, or a specific AI Agent.
+- `App/`, `Service/`, and `Driver/` are this template project's declared architecture layers, not mandatory directories for every project that reuses the AI workflow.
+- Another project may declare different architecture directories and dependency rules in `.context/engineering.yaml` and `.workflow/project.yaml`.
 - Toolchain and host-platform changes must be handled through `.workflow/project.yaml`, `tools/workflow.py`, and platform adapter code.
-- MCU or board migration may change `Driver/` internals and HAL bindings, but it must not change the App/Service/Driver dependency contract.
-- Dependency direction is `App -> Service -> Driver -> HAL`.
+- MCU or board migration may change `Driver/` internals and HAL bindings, but it must not change this project's declared dependency contract.
+- Current template dependency direction is `App -> Service -> Driver -> HAL`.
 - `App/` must not include STM32 HAL headers or call Driver APIs directly.
 - `Service/` owns feature-level behavior and may call Driver APIs.
 - `Driver/` may wrap HAL/register access but must not include Service or App headers.
@@ -21,20 +22,25 @@ The workflow and layout facts live in `.workflow/project.yaml`. Do not duplicate
 
 ## Directory Boundary
 
-These directories are part of the project framework and should move together when this template is reused:
+These directories are part of the reusable AI workflow framework and should move together when this workflow is reused:
 
 | Directory | Stable meaning |
 |-----------|----------------|
-| `App/` | Application behavior and business logic |
-| `Service/` | Hardware feature abstraction and orchestration |
-| `Driver/` | Project-owned driver APIs and low-level wrappers |
-| `Test/` | Firmware test code |
 | `docs/` | Project knowledge base and reference notes |
 | `.context/` | AI handoff facts |
 | `.workflow/` | Tool/layout configuration source |
 | `.agents/` | Agent-neutral workflow assets and canonical Skills |
 | `tools/` | Deterministic workflow commands and adapters |
 | `reports/` | Current report and evidence snapshots |
+
+These directories are the current template project's architecture. They are configurable project facts, not workflow-framework requirements:
+
+| Directory | Current meaning |
+|-----------|-----------------|
+| `App/` | Application behavior and business logic |
+| `Service/` | Hardware feature abstraction and orchestration |
+| `Driver/` | Project-owned driver APIs and low-level wrappers |
+| `Test/` | Firmware test code |
 
 These areas are platform, vendor, IDE, or local adapter boundaries:
 
@@ -47,7 +53,7 @@ These areas are platform, vendor, IDE, or local adapter boundaries:
 | `.claude/` | Optional Claude/Codex workflow adapter |
 | `very_test.ioc` | CubeMX hardware/platform source |
 
-Changing host OS, compiler, debugger, IDE, or AI Agent should not move the project framework directories. Put that variation into `.workflow/project.yaml`, `tools/workflow.py`, or a platform adapter.
+Changing host OS, compiler, debugger, IDE, or AI Agent should not move workflow directories or the current project's declared architecture directories. A new project may choose a different architecture by updating `.context/engineering.yaml`, `.workflow/project.yaml`, docs, and adapters.
 
 ## Current Initialization Reality
 

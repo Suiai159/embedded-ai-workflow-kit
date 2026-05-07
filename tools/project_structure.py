@@ -98,7 +98,8 @@ def generate(root: Path) -> str:
     board = cfg_get(workflow, "board.name", "")
     mcu = cfg_get(workflow, "mcu.device", cfg_get(workflow, "mcu.family", ""))
 
-    invariant = cfg_get(engineering, "directory_policy.project_invariant", [])
+    workflow_invariant = cfg_get(engineering, "directory_policy.workflow_invariant", [])
+    project_architecture = cfg_get(engineering, "directory_policy.project_architecture", [])
     variable = cfg_get(engineering, "directory_policy.platform_or_tool_variable", [])
 
     lines: List[str] = [
@@ -115,14 +116,26 @@ def generate(root: Path) -> str:
         f"- MCU: `{mcu}`",
         f"- Reports directory: `{cfg_get(workflow, 'layout.reports', 'reports')}`",
         "",
-        "## Project-Invariant Directories",
+        "## Workflow-Invariant Directories",
         "",
-        "These directories belong to the reusable project framework. Do not move or rename them because the host OS, IDE, compiler, debugger, or AI Agent changes.",
+        "These directories belong to the reusable AI workflow framework. They are not architecture-layer directories and should stay stable when the host OS, IDE, compiler, debugger, or AI Agent changes.",
         "",
         "| Path | Role | Changes when | Exists |",
         "|------|------|--------------|--------|",
     ]
-    lines.extend(rows(invariant, root))
+    lines.extend(rows(workflow_invariant, root))
+    lines.extend(
+        [
+            "",
+            "## Current Project Architecture Directories",
+            "",
+            "These directories are this project's declared architecture. They are configurable project facts, not mandatory directories for every project that reuses the AI workflow.",
+            "",
+            "| Path | Role | Changes when | Exists |",
+            "|------|------|--------------|--------|",
+        ]
+    )
+    lines.extend(rows(project_architecture, root))
     lines.extend(
         [
             "",
@@ -148,9 +161,9 @@ def generate(root: Path) -> str:
             "",
             "## Hard Rules",
             "",
-            "- New layered code goes only into `App/`, `Service/`, `Driver/`, or `Test/`.",
-            "- `App/Service/Driver/Test` must not be moved into `Core/`.",
-            "- Do not create `USER/`, `Middleware/`, or `Application/` as replacement layer directories.",
+            "- New layered code goes only into this project's declared architecture directories.",
+            "- Do not move declared architecture directories into generated/vendor/platform adapter directories.",
+            "- A different project may declare different architecture directories in `.context/engineering.yaml` and `.workflow/project.yaml`.",
             "- Host OS, compiler, IDE, debugger, and flash-tool changes belong in `.workflow/project.yaml`, `tools/`, or adapter directories.",
             "- Build, flash, check, review, and verify reports belong under `reports/` with fixed overwrite paths.",
             "",

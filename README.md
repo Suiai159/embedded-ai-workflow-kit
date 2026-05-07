@@ -52,7 +52,7 @@ python tools/context.py touch-runtime
 
 | 特性 | 说明 |
 |------|------|
-| **稳定分层架构** | App → Service → Driver 是工程框架不变量；HAL/平台适配可随 MCU 和工具链变化 |
+| **可配置分层架构** | 当前模板使用 App → Service → Driver；复用到其他项目时可在 `.context/engineering.yaml` 声明不同架构 |
 | **需求驱动开发** | `需求.md` 是唯一真相源，代码从需求文档生成 |
 | **Agent-neutral 工作流** | 从需求分析、架构设计、代码生成到编译烧录的全流程自动化辅助；`.agents/skills/` 是通用 Skill 源，Claude Skill 只是兼容镜像 |
 | **驱动开发支持** | 支持从零根据 datasheet 生成 Driver 层代码和测试代码 |
@@ -147,16 +147,27 @@ very_test/
 
 **重要规则**：
 
-- `App/`、`Service/`、`Driver/` 是工程框架层，不随 Windows/Linux、Keil/GCC/CMake 或 AI Agent 变化
-- 换 MCU/开发板时可以改 `Driver` 内部实现和 HAL 绑定，但不能随意改变 App/Service/Driver 的依赖契约
+- `App/`、`Service/`、`Driver/` 是当前模板工程的默认架构层，不是所有复用项目必须采用的目录名
+- 换 MCU/开发板时可以改 `Driver` 内部实现和 HAL 绑定，但不能随意改变当前项目声明的依赖契约
 - 换构建工具时只改 `.workflow/project.yaml`、`tools/workflow.py` 或平台 adapter，不改分层架构
-- 所有分层代码必须放在 `App/`、`Service/`、`Driver/`、`Test/` 下
+- 当前项目的分层代码必须放在 `.context/engineering.yaml` 声明的架构目录下
 - ❌ **禁止**创建 `USER/` 目录存放分层代码
-- ❌ **禁止**把 `App/Service/Driver/Test` 放进 `Core/` 内（`Core/` 只放 CubeMX 生成代码）
+- ❌ **禁止**把声明的架构目录放进 `Core/` 内（`Core/` 只放 CubeMX 生成代码）
 
 ### 目录边界规则
 
-工程本身的稳定目录：
+AI workflow 本身的稳定目录：
+
+| 目录 | 含义 |
+|------|------|
+| `docs/` | 项目知识库、参考资料和说明 |
+| `.context/` | AI 接手事实源 |
+| `.workflow/` | 项目工作流配置 |
+| `.agents/` | Agent-neutral AI 工作流资产和 canonical Skills |
+| `tools/` | 确定性工具和 adapter |
+| `reports/` | 当前证据快照，默认覆盖 |
+
+当前模板工程声明的架构目录：
 
 | 目录 | 含义 |
 |------|------|
@@ -164,12 +175,6 @@ very_test/
 | `Service/` | 硬件能力抽象和业务可用服务 |
 | `Driver/` | 工程自有驱动 API 和底层封装 |
 | `Test/` | 固件测试代码 |
-| `docs/` | 项目知识库、参考资料和说明 |
-| `.context/` | AI 接手事实源 |
-| `.workflow/` | 项目工作流配置 |
-| `.agents/` | Agent-neutral AI 工作流资产和 canonical Skills |
-| `tools/` | 确定性工具和 adapter |
-| `reports/` | 当前证据快照，默认覆盖 |
 
 平台、工具链或本地环境相关目录：
 
@@ -182,7 +187,7 @@ very_test/
 | `.claude/` | 可选 Claude/Codex Skill adapter |
 | `very_test.ioc` | CubeMX 硬件/平台配置源 |
 
-换 Windows/Linux、Keil/GCC/CMake、OpenOCD/GDB 或 AI Agent 时，优先保持稳定目录不动，只调整 `.workflow/project.yaml`、`tools/workflow.py`、adapter 或平台生成区域。
+换 Windows/Linux、Keil/GCC/CMake、OpenOCD/GDB 或 AI Agent 时，优先保持 workflow 稳定目录和当前项目声明的架构目录不动。若复用到不同架构的项目，先改 `.context/engineering.yaml` 和 `.workflow/project.yaml`，再重新生成 `.project_structure`。
 
 ### 报告目录规则
 

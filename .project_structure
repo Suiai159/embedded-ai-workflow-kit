@@ -11,9 +11,22 @@
 - MCU: `STM32F103C8`
 - Reports directory: `reports`
 
-## Project-Invariant Directories
+## Workflow-Invariant Directories
 
-These directories belong to the reusable project framework. Do not move or rename them because the host OS, IDE, compiler, debugger, or AI Agent changes.
+These directories belong to the reusable AI workflow framework. They are not architecture-layer directories and should stay stable when the host OS, IDE, compiler, debugger, or AI Agent changes.
+
+| Path | Role | Changes when | Exists |
+|------|------|--------------|--------|
+| `docs` | project knowledge base and reference notes | requirements, architecture, hardware facts, or workflow rules change | yes |
+| `.context` | AI handoff fact source | engineering, hardware, version, or runtime facts change | yes |
+| `.workflow` | project configuration source for tools and layout | project name, board, MCU, toolchain, output paths, serial, flash, or layout config changes | yes |
+| `.agents` | agent-neutral AI workflow assets and canonical Skills | AI workflow entrypoints, Skills, or compatibility mirrors change | yes |
+| `tools` | deterministic automation entry points | workflow actions or adapters change | yes |
+| `reports` | current evidence snapshots for automation reports | build, flash, review, check, or verify evidence is refreshed | yes |
+
+## Current Project Architecture Directories
+
+These directories are this project's declared architecture. They are configurable project facts, not mandatory directories for every project that reuses the AI workflow.
 
 | Path | Role | Changes when | Exists |
 |------|------|--------------|--------|
@@ -21,12 +34,6 @@ These directories belong to the reusable project framework. Do not move or renam
 | `Service` | project service abstraction layer | feature-level hardware services or orchestration change | yes |
 | `Driver` | project driver API layer | board/MCU peripherals change, while preserving public layer contracts | yes |
 | `Test` | project firmware test layer | behavior or driver/service test coverage changes | yes |
-| `docs` | project knowledge base and reference notes | requirements, architecture, hardware facts, or workflow rules change | yes |
-| `.context` | AI handoff fact source | engineering, hardware, version, or runtime facts change | yes |
-| `.workflow` | project configuration source for tools and layout | project name, board, MCU, toolchain, output paths, serial, flash, or layout config changes | yes |
-| `.agents` | agent-neutral AI workflow assets and canonical Skills | AI workflow entrypoints, Skills, or compatibility mirrors change | yes |
-| `tools` | deterministic automation entry points | workflow actions or adapters change | yes |
-| `reports` | current evidence snapshots for automation reports | build, flash, review, check, or verify evidence is refreshed | yes |
 
 ## Platform / Tool Adapter Boundaries
 
@@ -54,8 +61,8 @@ These paths may vary when the MCU, board, IDE, toolchain, generated code, or opt
 
 ## Hard Rules
 
-- New layered code goes only into `App/`, `Service/`, `Driver/`, or `Test/`.
-- `App/Service/Driver/Test` must not be moved into `Core/`.
-- Do not create `USER/`, `Middleware/`, or `Application/` as replacement layer directories.
+- New layered code goes only into this project's declared architecture directories.
+- Do not move declared architecture directories into generated/vendor/platform adapter directories.
+- A different project may declare different architecture directories in `.context/engineering.yaml` and `.workflow/project.yaml`.
 - Host OS, compiler, IDE, debugger, and flash-tool changes belong in `.workflow/project.yaml`, `tools/`, or adapter directories.
 - Build, flash, check, review, and verify reports belong under `reports/` with fixed overwrite paths.

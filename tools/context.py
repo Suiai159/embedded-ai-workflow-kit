@@ -133,7 +133,8 @@ def validate(root: Path) -> Tuple[List[str], List[str]]:
             "layout.driver",
             "layout.test",
             "layout.reports",
-            "directory_policy.project_invariant",
+            "directory_policy.workflow_invariant",
+            "directory_policy.project_architecture",
             "directory_policy.platform_or_tool_variable",
             "architecture.layers",
             "ai_rules.must_read_before_code_change",
@@ -164,16 +165,27 @@ def validate(root: Path) -> Tuple[List[str], List[str]]:
                 f"layout mismatch `{key}`: engineering={context_value!r}, workflow={workflow_value!r}"
             )
 
-    for item in cfg_get(data["engineering"], "directory_policy.project_invariant", []):
+    for item in cfg_get(data["engineering"], "directory_policy.workflow_invariant", []):
         if not isinstance(item, dict):
-            errors.append("engineering: each `directory_policy.project_invariant` item must be a mapping")
+            errors.append("engineering: each `directory_policy.workflow_invariant` item must be a mapping")
             continue
         path_value = item.get("path")
         if not path_value:
-            errors.append("engineering: project invariant directory item missing `path`")
+            errors.append("engineering: workflow invariant directory item missing `path`")
             continue
         if not (root / str(path_value)).exists():
-            errors.append(f"engineering: project invariant path missing: {path_value}")
+            errors.append(f"engineering: workflow invariant path missing: {path_value}")
+
+    for item in cfg_get(data["engineering"], "directory_policy.project_architecture", []):
+        if not isinstance(item, dict):
+            errors.append("engineering: each `directory_policy.project_architecture` item must be a mapping")
+            continue
+        path_value = item.get("path")
+        if not path_value:
+            errors.append("engineering: project architecture directory item missing `path`")
+            continue
+        if not (root / str(path_value)).exists():
+            errors.append(f"engineering: project architecture path missing: {path_value}")
 
     for item in cfg_get(data["engineering"], "directory_policy.platform_or_tool_variable", []):
         if not isinstance(item, dict):
@@ -247,15 +259,28 @@ def print_summary(root: Path) -> int:
     print("## Engineering")
     print(f"- Project: {cfg_get(workflow, 'project.name', cfg_get(data['version'], 'project.name', 'unknown'))}")
     print(f"- Toolchain adapter: {cfg_get(workflow, 'toolchain.type', cfg_get(data['version'], 'toolchain.active_adapter', 'unknown'))}")
-    print(f"- Layout: App={cfg_get(data['engineering'], 'layout.app')}, Service={cfg_get(data['engineering'], 'layout.service')}, Driver={cfg_get(data['engineering'], 'layout.driver')}, Test={cfg_get(data['engineering'], 'layout.test')}")
-    print("- Dependency rule: App -> Service -> Driver -> HAL")
-    invariant_paths = [
+    print(f"- Architecture profile: {cfg_get(data['engineering'], 'architecture.profile', 'custom')}")
+    layer_names = [
+        str(layer.get("name"))
+        for layer in cfg_get(data["engineering"], "architecture.layers", [])
+        if isinstance(layer, dict) and layer.get("name")
+    ]
+    if layer_names:
+        print("- Declared layers: " + " -> ".join(layer_names))
+    workflow_paths = [
         str(item.get("path"))
-        for item in cfg_get(data["engineering"], "directory_policy.project_invariant", [])
+        for item in cfg_get(data["engineering"], "directory_policy.workflow_invariant", [])
         if isinstance(item, dict) and item.get("path")
     ]
-    if invariant_paths:
-        print("- Project-invariant dirs: " + ", ".join(invariant_paths))
+    if workflow_paths:
+        print("- Workflow-invariant dirs: " + ", ".join(workflow_paths))
+    arch_paths = [
+        str(item.get("path"))
+        for item in cfg_get(data["engineering"], "directory_policy.project_architecture", [])
+        if isinstance(item, dict) and item.get("path")
+    ]
+    if arch_paths:
+        print("- Current project architecture dirs: " + ", ".join(arch_paths))
     print("")
     print("## Hardware")
     print(f"- MCU: {cfg_get(data['hardware'], 'mcu.family')} / {cfg_get(data['hardware'], 'mcu.device')}")

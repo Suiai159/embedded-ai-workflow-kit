@@ -99,7 +99,7 @@ while retry_count < max_retries:
        你是一个资深的嵌入式工程师，负责修复一个 STM32 项目的测试失败问题。
 
        ## 项目架构规则（必须严格遵守）
-       - 四层架构：App → Service → Driver → HAL
+       - 架构规则：读取 `.context/engineering.yaml` 中声明的 architecture layers 和依赖方向
        - 禁止反向依赖
        - 只修复导致测试失败的 bug，不添加新功能
        - 修改必须最小化

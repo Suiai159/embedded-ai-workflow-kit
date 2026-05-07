@@ -59,17 +59,29 @@ Equivalent actions for any agent:
 ## Development Rules
 
 - Requirement-driven work starts from `需求.md`.
-- `App/`, `Service/`, and `Driver/` are stable project framework layers. Do not change their responsibilities because the host OS, IDE, compiler, or AI Agent changes.
-- Architecture follows `App -> Service -> Driver -> HAL/platform`.
+- `App/`, `Service/`, and `Driver/` are this template project's declared architecture layers, not mandatory workflow-framework directories.
+- Read `.context/engineering.yaml` to discover the current project's architecture layers and dependency rules.
+- This template currently follows `App -> Service -> Driver -> HAL/platform`.
 - Toolchain and host-platform variation belongs in `.workflow/project.yaml`, `tools/workflow.py`, and platform adapters.
-- MCU/board migration may change Driver internals and HAL bindings, but must preserve the App/Service/Driver public contract unless the architecture is explicitly redesigned.
+- MCU/board migration may change declared lower-layer internals and HAL bindings, but must preserve the current project's declared architecture contract unless the architecture is explicitly redesigned.
 - Hardware resource ownership is defined in `.context/hardware.yaml`.
 - Current runtime state is defined in `.context/runtime.yaml`.
 - Structural workflow changes should be recorded in `EVOLUTION.md`.
 
 ## Directory Boundary
 
-Project-invariant directories:
+Workflow-invariant directories:
+
+| Directory | Meaning |
+|-----------|---------|
+| `docs/` | Project knowledge base |
+| `.context/` | AI handoff facts |
+| `.workflow/` | Project workflow configuration |
+| `.agents/` | Agent-neutral rules, workflow assets, and canonical Skills |
+| `tools/` | Deterministic automation and adapters |
+| `reports/` | Current evidence snapshots, overwritten by default |
+
+Current project architecture directories:
 
 | Directory | Meaning |
 |-----------|---------|
@@ -77,12 +89,6 @@ Project-invariant directories:
 | `Service/` | Hardware feature abstraction |
 | `Driver/` | Project-owned driver APIs and low-level wrappers |
 | `Test/` | Firmware test code |
-| `docs/` | Project knowledge base |
-| `.context/` | AI handoff facts |
-| `.workflow/` | Project workflow configuration |
-| `.agents/` | Agent-neutral rules, workflow assets, and canonical Skills |
-| `tools/` | Deterministic automation and adapters |
-| `reports/` | Current evidence snapshots, overwritten by default |
 
 Platform, tool, IDE, or local adapter areas:
 
@@ -95,4 +101,4 @@ Platform, tool, IDE, or local adapter areas:
 | `.claude/` | Optional Claude/Codex Skill adapter |
 | `very_test.ioc` | CubeMX hardware/platform source |
 
-When switching Windows/Linux, Keil/GCC/CMake, OpenOCD/GDB, or AI agents, preserve the project-invariant directories and change only workflow configuration, adapters, or platform-generated areas as needed.
+When switching Windows/Linux, Keil/GCC/CMake, OpenOCD/GDB, or AI agents, preserve workflow-invariant directories and the current project's declared architecture directories. When reusing the workflow in a different project, update `.context/engineering.yaml` and `.workflow/project.yaml` to declare that project's architecture.

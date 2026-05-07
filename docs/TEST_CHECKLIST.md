@@ -25,8 +25,10 @@
   ```
   期望：能说清工程分层、硬件资源、工具链、运行状态。
 
-- [ ] 检查 `.context/engineering.yaml` 中的工程稳定目录。
-  期望：包含 `App`, `Service`, `Driver`, `Test`, `docs`, `.context`, `.workflow`, `.agents`, `tools`, `reports`。
+- [ ] 检查 `.context/engineering.yaml` 中的目录策略。
+  期望：
+  - `directory_policy.workflow_invariant` 包含 `docs`, `.context`, `.workflow`, `.agents`, `tools`, `reports`
+  - `directory_policy.project_architecture` 声明当前项目架构目录，例如本模板的 `App`, `Service`, `Driver`, `Test`
 
 ## 2. Workflow 配置检查
 

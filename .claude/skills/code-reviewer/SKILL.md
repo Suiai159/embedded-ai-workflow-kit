@@ -1,7 +1,7 @@
 ---
 schema: skill-1.0
 name: code-reviewer
-description: Review embedded C code against project requirements, App/Service/Driver architecture, hardware resource ownership, ISR safety, timing, stack, and generated-code boundaries.
+description: Review embedded C code against project requirements, the architecture declared in .context/engineering.yaml, hardware resource ownership, ISR safety, timing, stack, and generated-code boundaries.
 user-invocable: true
 ---
 

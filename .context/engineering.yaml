@@ -18,19 +18,7 @@ layout:
   vendor_drivers: Drivers
 
 directory_policy:
-  project_invariant:
-    - path: App
-      role: project application layer
-      changes_when: business/application behavior changes
-    - path: Service
-      role: project service abstraction layer
-      changes_when: feature-level hardware services or orchestration change
-    - path: Driver
-      role: project driver API layer
-      changes_when: board/MCU peripherals change, while preserving public layer contracts
-    - path: Test
-      role: project firmware test layer
-      changes_when: behavior or driver/service test coverage changes
+  workflow_invariant:
     - path: docs
       role: project knowledge base and reference notes
       changes_when: requirements, architecture, hardware facts, or workflow rules change
@@ -49,6 +37,19 @@ directory_policy:
     - path: reports
       role: current evidence snapshots for automation reports
       changes_when: build, flash, review, check, or verify evidence is refreshed
+  project_architecture:
+    - path: App
+      role: project application layer
+      changes_when: business/application behavior changes
+    - path: Service
+      role: project service abstraction layer
+      changes_when: feature-level hardware services or orchestration change
+    - path: Driver
+      role: project driver API layer
+      changes_when: board/MCU peripherals change, while preserving public layer contracts
+    - path: Test
+      role: project firmware test layer
+      changes_when: behavior or driver/service test coverage changes
   platform_or_tool_variable:
     - path: Core
       role: CubeMX/generated platform code
@@ -69,16 +70,21 @@ directory_policy:
       role: CubeMX hardware/platform source
       changes_when: CubeMX board, clock, pin, or peripheral configuration changes
   rules:
-    - Do not move App, Service, Driver, Test, docs, .context, .workflow, .agents, tools, or reports because the host OS, IDE, compiler, or AI agent changes.
+    - The reusable AI workflow does not mandate App/Service/Driver; each project declares its architecture directories here.
+    - Do not move workflow invariant directories because the host OS, IDE, compiler, or AI agent changes.
+    - Do not move this project's declared architecture directories because the host OS, IDE, compiler, or AI agent changes.
     - Keep canonical Skills in .agents/skills; tool-specific Skill folders are compatibility mirrors.
     - Put host OS, IDE, compiler, debugger, and flash tool differences into .workflow/project.yaml, tools/workflow.py, or a platform adapter.
     - Keep build, flash, review, check, and verify reports under reports with fixed overwrite paths.
 
 architecture:
+  profile: app-service-driver
+  portability_note: App/Service/Driver is this template project's architecture, not a required architecture for every project that reuses the AI workflow.
   invariants:
-    - App, Service, and Driver are project framework layers.
-    - These layers do not change when the host OS, build tool, IDE, or firmware toolchain changes.
-    - A hardware or MCU migration may change Driver internals and platform bindings, but not the App/Service/Driver layer contract.
+    - This project uses App, Service, and Driver as its declared architecture layers.
+    - A different project may declare different architecture directories and dependency rules.
+    - Declared architecture layers do not change when the host OS, build tool, IDE, or firmware toolchain changes.
+    - A hardware or MCU migration may change Driver internals and platform bindings, but not this project's declared layer contract.
     - HAL/Core/Drivers/vendor files are platform adapter boundaries, not project architecture layers owned by application logic.
   layers:
     - name: App
@@ -106,7 +112,7 @@ architecture:
     build_toolchain: [.workflow/project.yaml, tools/workflow.py]
     mcu_vendor_hal: [Core, Drivers, very_test.ioc]
     driver_implementation: [Driver]
-  stable_project_boundary:
+  current_project_architecture_boundary:
     - App
     - Service
     - Driver public APIs

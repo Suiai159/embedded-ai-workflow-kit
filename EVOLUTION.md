@@ -21,12 +21,13 @@
 - [doc] 更新 `README.md`、`CLAUDE.md`、`docs/项目介绍.md`，明确 `.claude/skills/` 只是 Claude/Codex 兼容镜像
 - [doc] 更新 `.context/version.*`、`.context/engineering.md`，把 Agent-neutral 入口纳入上下文事实
 - [arch] 将默认叙事从 “Claude Code Skill 工作流” 调整为 “Agent 工作流 + tools 确定性命令 + 可选 Skill 适配器”
-- [arch] 明确 `App/Service/Driver` 是工程框架不变量，不随主机平台、IDE、工具链或 Agent 变化
-- [arch] 明确工程稳定目录与平台/工具适配目录的边界：`App/Service/Driver/Test/docs/.context/.workflow/.agents/tools/reports` 属于工程本身，`Core/Drivers/MDK-ARM/.vscode/.claude/*.ioc` 属于平台、工具或可选 adapter 边界
+- [arch] 明确 `App/Service/Driver` 是当前模板项目声明的默认架构，不是 AI workflow 框架强制绑定的唯一架构
+- [arch] 明确 workflow 稳定目录与项目架构目录的边界：`docs/.context/.workflow/.agents/tools/reports` 属于 AI workflow 本身，`App/Service/Driver/Test` 属于当前模板项目架构声明，`Core/Drivers/MDK-ARM/.vscode/.claude/*.ioc` 属于平台、工具或可选 adapter 边界
 - [tool] 新增 `tools/project_structure.py` 和 `python tools/workflow.py structure`，让 `.project_structure` 从上下文与 workflow 配置一键生成
 - [policy] 规定 Agent 修改文件后必须先暂存本次任务文件，验证可用后再提交，除非用户明确说不要提交
 - [policy] 规定 Agent 修改文件后必须更新持久日志：日常进展写 `PROJECT_LOG.md`，框架演进写 `EVOLUTION.md`
 - [doc] 新增 `docs/TEST_CHECKLIST.md`，把上下文、workflow、Agent 资产、reports、git/log guard、build/flash/verify 的验证步骤整理成测试清单
+- [arch] 修正架构目录复用边界：其他项目可声明不同架构目录，workflow 只要求架构事实清晰、依赖边界明确，不强制使用 App/Service/Driver 命名
 
 ---
 

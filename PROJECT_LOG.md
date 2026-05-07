@@ -1,11 +1,26 @@
 # 项目开发日志
 
 ## 活跃任务
-- [x] [doc] 新增工程工作流测试清单，帮助逐项验证上下文、workflow、Agent 资产、reports、git/log guard、build/flash/verify。
+- [x] [arch] 修正架构目录复用边界：App/Service/Driver 是当前模板架构，不是 AI workflow 强制绑定目录。
 
 ## 阻塞项
 <!-- 需要外部资源或人类决策才能继续的事项 -->
 *暂无阻塞项*
+
+---
+
+## 2026-05-07
+
+### 已完成
+- [x] [arch] 将目录策略拆分为 `workflow_invariant` 与 `project_architecture`。
+- [x] [tool] 更新 `context.py` 和 `project_structure.py`，摘要和结构快照不再把 App/Service/Driver 写死为 workflow 不变量。
+- [x] [doc] 更新 Agent 入口、上下文说明、README、CLAUDE 和测试清单，明确其他项目可声明不同架构。
+
+### 问题 & 解决
+- [x] [architecture] 之前把当前模板的 App/Service/Driver 误表达为工作流框架绑定。已修正为“当前项目架构声明”。
+
+### 待跟进
+*无*
 
 ---
 
