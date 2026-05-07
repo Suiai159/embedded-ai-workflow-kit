@@ -1,12 +1,25 @@
 # 项目开发日志
 
 ## 活跃任务
-- [x] [policy] 明确 Agent 工作的 git 节奏：先暂存任务检查点，验证可用后再提交，避免每个小步骤都产生 commit。
-- [x] [policy] 增加强制日志记录规则：Agent 修改文件后必须更新 `PROJECT_LOG.md` 和/或 `EVOLUTION.md`。
+- [x] [doc] 新增工程工作流测试清单，帮助逐项验证上下文、workflow、Agent 资产、reports、git/log guard、build/flash/verify。
 
 ## 阻塞项
 <!-- 需要外部资源或人类决策才能继续的事项 -->
 *暂无阻塞项*
+
+---
+
+## 2026-05-07
+
+### 已完成
+- [x] [doc] 新增 `docs/TEST_CHECKLIST.md`，整理近期工程框架改造后的测试顺序和通过标准。
+- [x] [test] 清单覆盖无硬件检查、Keil 构建、烧录、verify、GCC/CMake adapter 预留、reports 目录、git/log guard。
+
+### 问题 & 解决
+- [x] [process] 改动范围较大，不容易知道从哪里开始测试。已按“低风险无硬件 → 本机工具链 → 真板闭环”的顺序组织清单。
+
+### 待跟进
+*无*
 
 ---
 

@@ -26,6 +26,7 @@
 - [tool] 新增 `tools/project_structure.py` 和 `python tools/workflow.py structure`，让 `.project_structure` 从上下文与 workflow 配置一键生成
 - [policy] 规定 Agent 修改文件后必须先暂存本次任务文件，验证可用后再提交，除非用户明确说不要提交
 - [policy] 规定 Agent 修改文件后必须更新持久日志：日常进展写 `PROJECT_LOG.md`，框架演进写 `EVOLUTION.md`
+- [doc] 新增 `docs/TEST_CHECKLIST.md`，把上下文、workflow、Agent 资产、reports、git/log guard、build/flash/verify 的验证步骤整理成测试清单
 
 ---
 
