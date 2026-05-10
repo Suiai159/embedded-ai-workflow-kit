@@ -161,6 +161,16 @@ mkdir .context .workflow reports docs
 
 > 目录链接让 AI 看到 `.agents/` 和 `tools/` 就像在业务项目根目录下一样。AGENTS.md 里的路径（`.context/`、`.workflow/` 等）从业务项目根目录解析，链接自动指向 kit。AI 无需额外适配。
 
+**第五步**：安装 kit 的 Skill 到 `.claude/skills/`：
+
+```bash
+python tools/install_skills.py
+```
+
+脚本会自动扫描 kit 的 `.agents/skills/`，对每个 skill 在 `.claude/skills/` 下创建目录链接。如果某个 skill 已被全局 `~/.claude/skills/` 或项目 `.claude/skills/` 占用，就跳过不覆盖。
+
+> 这样你自定义的 skill（如 `/build`、`/flash`）不受影响，kit 额外提供的 skill（如 `/project-port`、`/arch`、`/verify` 等）自动可用。kit 更新后 `git pull` 即刻生效。
+
 ### 哪些文件归 kit，哪些归业务项目
 
 | 路径 | 类型 | 归属 | 说明 |
@@ -175,6 +185,7 @@ mkdir .context .workflow reports docs
 | `PROJECT_LOG.md` | 真实文件 | 业务项目 | 项目日志 |
 | `EVOLUTION.md` | 真实文件 | 业务项目 | 架构演进记录 |
 | `CLAUDE.md` | 真实文件 | 业务项目 | 桥接文件 |
+| `.claude/skills/`（属于 kit 的） | 目录链接 | kit | 由 `install_skills.py` 逐个安装 |
 
 ### 更新 kit
 
@@ -230,6 +241,7 @@ python tools/agent_assets.py validate    # 校验 Agent 规则文件
 python tools/project_structure.py generate  # 生成工程结构快照
 python tools/log_guard.py validate --mode either  # 校验日志是否更新
 python tools/git_guard.py status         # 查看 git 状态
+python tools/install_skills.py           # 安装 kit Skill 到 .claude/skills/
 ```
 
 在未配置真实工程时，`build` 和 `flash` 会提示你先配置 adapter。
