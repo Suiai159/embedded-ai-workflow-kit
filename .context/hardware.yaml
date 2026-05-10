@@ -1,60 +1,20 @@
 schema: context-hardware-1.0
 context_kind: hardware
 board:
-  name: STM32F103 template board
-  notes: STM32F103C8T6 core-board style template
+  name: unconfigured
+  notes: No board is bundled with the workflow kit.
 
 mcu:
-  family: STM32F1xx
-  device: STM32F103C8
-  core: Cortex-M3
-  clock_hz: 72000000
+  family: unconfigured
+  device: unconfigured
+  core: unconfigured
+  clock_hz: null
 
-clocks:
-  system_hz: 72000000
-  apb1_timer_hz: 72000000
+clocks: {}
 
-resources:
-  - id: LED_PC13
-    type: gpio
-    peripheral: GPIOC
-    pin: 13
-    owner: LED_Service
-    polarity: active_low
-    verified: true
-    reference: docs/reference/led.md
-  - id: TIM2_PWM_TICK
-    type: timer
-    peripheral: TIM2
-    owner: TIM_Driver
-    frequency_hz: 20000
-    psc: 35
-    arr: 99
-    irq: TIM2_IRQn
-    irq_priority: 2
-    verified: true
-    reference: docs/reference/timer.md
-  - id: USART1_LOG
-    type: uart
-    peripheral: USART1
-    owner: UART_Driver
-    baudrate: 115200
-    data_bits: 8
-    stop_bits: 1
-    parity: none
-    flow_control: none
-    verified: true
-    reference: docs/reference/uart.md
+resources: []
 
-signals:
-  led:
-    control: PC13
-    on_level: low
-    off_level: high
-    pwm_method: software_pwm
-    pwm_resolution_steps: 100
+signals: {}
 
 known_hardware_assumptions:
-  - GPIO clocks and pin modes are configured by CubeMX-generated MX_GPIO_Init.
-  - Timer clock math assumes APB1 timer clock is 72 MHz.
-  - UART printf redirection uses USART1 at 115200 baud.
+  - The adopting project must record MCU, clocks, pins, peripherals, resource ownership, and verified hardware behavior here.

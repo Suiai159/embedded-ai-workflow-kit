@@ -2,14 +2,12 @@
 """
 Manage agent-neutral AI assets.
 
-`.agents/skills` is the canonical Skill source. Tool-specific directories such
-as `.claude/skills` are compatibility mirrors.
+`.agents/skills` is the canonical Skill source.
 """
 
 from __future__ import annotations
 
 import argparse
-import shutil
 import sys
 from pathlib import Path
 from typing import Iterable, List, Tuple
@@ -50,7 +48,6 @@ def validate(root: Path) -> Tuple[List[str], List[str]]:
     manifest = root / ".agents" / "manifest.yaml"
     rules = root / ".agents" / "rules"
     canonical = root / ".agents" / "skills"
-    claude_mirror = root / ".claude" / "skills"
 
     if not manifest.exists():
         errors.append("missing `.agents/manifest.yaml`")
@@ -76,51 +73,7 @@ def validate(root: Path) -> Tuple[List[str], List[str]]:
         text = skill_file.read_text(encoding="utf-8", errors="ignore")
         if not text.startswith("---"):
             errors.append(f"skill missing YAML frontmatter: {skill_file.relative_to(root)}")
-        if ".claude/skills" in text.replace("\\", "/"):
-            errors.append(
-                f"canonical skill references `.claude/skills`: {skill_file.relative_to(root)}"
-            )
-
-    if not claude_mirror.exists():
-        warnings.append("compatibility mirror `.claude/skills` does not exist")
-    else:
-        for skill_dir in skill_dirs:
-            mirrored = claude_mirror / skill_dir.name / "SKILL.md"
-            if not mirrored.exists():
-                warnings.append(f"Claude mirror missing skill: {skill_dir.name}")
-
     return errors, warnings
-
-
-def copy_tree(src: Path, dst: Path) -> None:
-    if dst.exists():
-        shutil.rmtree(dst)
-    dst.mkdir(parents=True, exist_ok=True)
-    for path in src.rglob("*"):
-        if "__pycache__" in path.parts:
-            continue
-        rel = path.relative_to(src)
-        target = dst / rel
-        if path.is_dir():
-            target.mkdir(parents=True, exist_ok=True)
-        else:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(path, target)
-
-
-def sync_skills(root: Path, target: str) -> int:
-    src = root / ".agents" / "skills"
-    if target != "claude":
-        print(f"Error: unsupported target `{target}`", file=sys.stderr)
-        return 1
-    if not src.exists():
-        print("Error: missing canonical skills directory `.agents/skills`", file=sys.stderr)
-        return 1
-
-    dst = root / ".claude" / "skills"
-    copy_tree(src, dst)
-    print(f"Synced {src.relative_to(root)} -> {dst.relative_to(root)}")
-    return 0
 
 
 def main() -> int:
@@ -130,8 +83,6 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Manage agent-neutral AI assets")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("validate", help="Validate canonical agent assets")
-    sync_parser = sub.add_parser("sync-skills", help="Sync canonical Skills to a compatibility target")
-    sync_parser.add_argument("--target", choices=["claude"], required=True)
 
     args = parser.parse_args()
 
@@ -145,9 +96,6 @@ def main() -> int:
             return 1
         print("Agent assets validation passed.")
         return 0
-
-    if args.command == "sync-skills":
-        return sync_skills(root, args.target)
 
     parser.print_help()
     return 1

@@ -1,55 +1,29 @@
 {
-  "source_dirs": ["Core/Src", "User/Src"],
-  "exclude_dirs": ["Middlewares", "Drivers/STM32F1xx_HAL_Driver", "MDK-ARM"],
-  "isr_functions": [
-    "HAL_GPIO_EXTI_Callback",
-    "HAL_TIM_PeriodElapsedCallback",
-    "HAL_TIM_IC_CaptureCallback",
-    "HAL_TIM_PWM_PulseFinishedCallback",
-    "HAL_UART_RxCpltCallback",
-    "HAL_UART_TxCpltCallback",
-    "HAL_SPI_RxCpltCallback",
-    "HAL_SPI_TxCpltCallback",
-    "HAL_SPI_TxRxCpltCallback",
-    "HAL_I2C_MasterRxCpltCallback",
-    "HAL_I2C_MasterTxCpltCallback",
-    "HAL_ADC_ConvCpltCallback",
-    "HAL_DMA_IRQHandler"
-  ],
+  "source_dirs": [],
+  "exclude_dirs": [],
+  "isr_functions": [],
   "forbidden_in_isr": [
-    "HAL_Delay",
     "printf",
     "sprintf",
     "fprintf",
     "malloc",
-    "free",
-    "HAL_UART_Transmit",
-    "HAL_SPI_Transmit",
-    "HAL_I2C_Master_Transmit",
-    "HAL_I2C_Master_Receive"
+    "free"
   ],
   "max_stack_buffer": 256,
   "check_rules": {
     "isr_blocking": true,
     "infinite_loop": true,
     "stack_usage": true,
-    "gpio_config": true,
-    "pwm_config": true,
+    "gpio_config": false,
+    "pwm_config": false,
     "magic_number": true,
-    "clock_enable": true,
+    "clock_enable": false,
     "freertos_task": true,
     "comment_quality": false
   },
-  "pwm_calculation": {
-    "system_clock": 72000000,
-    "default_prescaler": 719,
-    "default_period": 999
-  },
-  "gpio_standards": {
-    "output_modes": ["GPIO_MODE_OUTPUT_PP", "GPIO_MODE_OUTPUT_OD"],
-    "input_modes": ["GPIO_MODE_INPUT", "GPIO_MODE_IT_RISING", "GPIO_MODE_IT_FALLING", "GPIO_MODE_IT_RISING_FALLING"],
-    "af_modes": ["GPIO_MODE_AF_PP", "GPIO_MODE_AF_OD"]
-  },
+  "notes": [
+    "This is a generic workflow-kit default. Add project-specific source_dirs, ISR callbacks, vendor/platform rules, timing checks, and resource constraints after adoption."
+  ],
   "severity_weights": {
     "critical": 10,
     "warning": 5,

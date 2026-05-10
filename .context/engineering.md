@@ -1,65 +1,51 @@
 # Engineering Context
 
-This file is the human-readable handoff note for the project architecture. The machine-readable companion is `.context/engineering.yaml`.
+This repository is an agent-neutral embedded workflow kit, not a configured firmware project.
 
-## What This Project Is
+## What Is Stable
 
-This repository is an embedded STM32 template with reusable AI-assisted workflow tooling. The source tree intentionally separates generated platform code from hand-maintained application logic.
+The reusable workflow consists of:
 
-The workflow and layout facts live in `.workflow/project.yaml`. Do not duplicate tool paths or project output paths in Agent prompts, Skills, or tool-specific adapters.
-
-## Architecture Rules
-
-- `App/`, `Service/`, and `Driver/` are this template project's declared architecture layers, not mandatory directories for every project that reuses the AI workflow.
-- Another project may declare different architecture directories and dependency rules in `.context/engineering.yaml` and `.workflow/project.yaml`.
-- Toolchain and host-platform changes must be handled through `.workflow/project.yaml`, `tools/workflow.py`, and platform adapter code.
-- MCU or board migration may change `Driver/` internals and HAL bindings, but it must not change this project's declared dependency contract.
-- Current template dependency direction is `App -> Service -> Driver -> HAL`.
-- `App/` must not include STM32 HAL headers or call Driver APIs directly.
-- `Service/` owns feature-level behavior and may call Driver APIs.
-- `Driver/` may wrap HAL/register access but must not include Service or App headers.
-- `Core/` and `Drivers/` are treated as CubeMX/vendor generated areas.
-
-## Directory Boundary
-
-These directories are part of the reusable AI workflow framework and should move together when this workflow is reused:
-
-| Directory | Stable meaning |
-|-----------|----------------|
-| `docs/` | Project knowledge base and reference notes |
+| Path | Role |
+|------|------|
+| `AGENTS.md` | Generic Agent entry point |
+| `.agents/` | Agent rules and canonical Skills |
 | `.context/` | AI handoff facts |
-| `.workflow/` | Tool/layout configuration source |
-| `.agents/` | Agent-neutral workflow assets and canonical Skills |
-| `tools/` | Deterministic workflow commands and adapters |
-| `reports/` | Current report and evidence snapshots |
+| `.workflow/` | Workflow/project configuration |
+| `tools/` | Deterministic commands and adapters |
+| `docs/` | Workflow documentation |
+| `reports/` | Current evidence snapshots |
 
-These directories are the current template project's architecture. They are configurable project facts, not workflow-framework requirements:
+These paths should be copied into a concrete project as the workflow kit.
 
-| Directory | Current meaning |
-|-----------|-----------------|
-| `App/` | Application behavior and business logic |
-| `Service/` | Hardware feature abstraction and orchestration |
-| `Driver/` | Project-owned driver APIs and low-level wrappers |
-| `Test/` | Firmware test code |
+## What Is Not Bundled
 
-These areas are platform, vendor, IDE, or local adapter boundaries:
+The kit intentionally does not ship:
 
-| Directory or file | Variable meaning |
-|-------------------|------------------|
-| `Core/` | CubeMX/generated startup and HAL glue |
-| `Drivers/` | Vendor HAL/CMSIS packages |
-| `MDK-ARM/` | Keil project adapter artifacts |
-| `.vscode/` | Local editor settings |
-| `.claude/` | Optional Claude/Codex workflow adapter |
-| `very_test.ioc` | CubeMX hardware/platform source |
+- Default application architecture directories such as `App/`, `Service/`, or `Driver/`
+- A default `Test/` directory
+- CubeMX generated code
+- Keil/CMake/GCC project files
+- Board, MCU, pin, clock, or peripheral facts
+- Tool-specific Agent mirrors such as `.claude/`
 
-Changing host OS, compiler, debugger, IDE, or AI Agent should not move workflow directories or the current project's declared architecture directories. A new project may choose a different architecture by updating `.context/engineering.yaml`, `.workflow/project.yaml`, docs, and adapters.
+The adopting project must declare those facts in `.workflow/project.yaml` and `.context/*`.
 
-## Current Initialization Reality
+## Architecture Rule
 
-The ideal rule says `System_Init()` should initialize drivers first, then services, then apps. Current code partially violates that ideal because `LOG_Service_Init()`, `LED_Service_Init()`, and `PWM_Service_Init()` call lower-layer init functions internally.
+The workflow does not mandate a specific architecture. It only requires that a concrete project records:
 
-AI should not silently "fix" this while doing unrelated work. Treat it as a known architecture debt unless the task is explicitly about initialization cleanup.
+1. Architecture directories
+2. Dependency direction
+3. Ownership boundaries
+4. Generated/vendor/tool boundaries
+5. Test entry points
+
+For this unconfigured kit, architecture is intentionally empty.
+
+## Test Interface
+
+The workflow keeps test and verify interfaces because embedded development should make testing a first-class path. The kit does not create a default `Test/` folder; a project can map tests to any directory or command through `.workflow/project.yaml`.
 
 ## AI Handoff Rule
 
@@ -78,22 +64,12 @@ Before changing code, read:
 
 Conversation history is not a substitute for these files.
 
-## Git Handoff Rule
+## Git And Logging
 
-Any Agent that changes files must use git as part of the work:
+Any Agent that changes files must:
 
 1. Run `python tools/git_guard.py status` before editing.
-2. Review diffs after editing.
+2. Update `PROJECT_LOG.md` and/or `EVOLUTION.md`.
 3. Stage only task-owned files as a checkpoint.
-4. Commit after validation passes unless the user explicitly says not to commit.
-
-The detailed rule is `.agents/rules/git.md`.
-
-## Logging Rule
-
-Any Agent that changes files must update durable logs:
-
-- `PROJECT_LOG.md` for daily project work, validation, blockers, and next actions.
-- `EVOLUTION.md` for framework, rule, Skill, tool, layout, or architecture-policy changes.
-
-The detailed rule is `.agents/rules/logging.md`.
+4. Validate the checkpoint.
+5. Commit after validation passes unless the user explicitly says not to commit.

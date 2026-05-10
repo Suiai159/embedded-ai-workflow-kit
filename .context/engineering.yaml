@@ -2,134 +2,66 @@ schema: context-engineering-1.0
 context_kind: engineering
 source_of_truth:
   workflow_config: .workflow/project.yaml
-  architecture_doc: docs/ARCHITECTURE.md
   project_structure: .project_structure
   agent_assets: .agents/manifest.yaml
   agent_rules: .agents/rules
-  requirement_doc: "\u9700\u6c42.md"
+  requirement_doc: 需求.md
 
 layout:
-  app: App
-  service: Service
-  driver: Driver
-  test: Test
   reports: reports
-  generated_core: Core
-  vendor_drivers: Drivers
+  architecture: []
+  tests: []
 
 directory_policy:
   workflow_invariant:
     - path: docs
-      role: project knowledge base and reference notes
-      changes_when: requirements, architecture, hardware facts, or workflow rules change
+      role: workflow documentation and handoff guides
+      changes_when: workflow rules, test checklist, or usage docs change
     - path: .context
       role: AI handoff fact source
       changes_when: engineering, hardware, version, or runtime facts change
     - path: .workflow
-      role: project configuration source for tools and layout
-      changes_when: project name, board, MCU, toolchain, output paths, serial, flash, or layout config changes
+      role: workflow/project configuration source
+      changes_when: project, toolchain, layout, test, flash, or report configuration changes
     - path: .agents
-      role: agent-neutral AI workflow assets and canonical Skills
-      changes_when: AI workflow entrypoints, Skills, or compatibility mirrors change
+      role: agent-neutral rules and canonical Skills
+      changes_when: Agent rules, Skills, or compatibility metadata change
     - path: tools
-      role: deterministic automation entry points
+      role: deterministic workflow commands and adapters
       changes_when: workflow actions or adapters change
     - path: reports
       role: current evidence snapshots for automation reports
       changes_when: build, flash, review, check, or verify evidence is refreshed
-  project_architecture:
-    - path: App
-      role: project application layer
-      changes_when: business/application behavior changes
-    - path: Service
-      role: project service abstraction layer
-      changes_when: feature-level hardware services or orchestration change
-    - path: Driver
-      role: project driver API layer
-      changes_when: board/MCU peripherals change, while preserving public layer contracts
-    - path: Test
-      role: project firmware test layer
-      changes_when: behavior or driver/service test coverage changes
-  platform_or_tool_variable:
-    - path: Core
-      role: CubeMX/generated platform code
-      changes_when: MCU, CubeMX configuration, HAL generation, or platform startup changes
-    - path: Drivers
-      role: vendor HAL/CMSIS libraries
-      changes_when: vendor package or MCU family changes
-    - path: MDK-ARM
-      role: Keil project adapter artifacts
-      changes_when: Keil project generation or Keil adapter configuration changes
-    - path: .vscode
-      role: local IDE/editor settings
-      changes_when: developer workstation/editor configuration changes
-    - path: .claude
-      role: optional Claude/Codex skill adapter
-      changes_when: that adapter changes; generic agents should not depend on it as the only workflow source
-    - path: very_test.ioc
-      role: CubeMX hardware/platform source
-      changes_when: CubeMX board, clock, pin, or peripheral configuration changes
+  project_architecture: []
+  platform_or_tool_variable: []
   rules:
-    - The reusable AI workflow does not mandate App/Service/Driver; each project declares its architecture directories here.
-    - Do not move workflow invariant directories because the host OS, IDE, compiler, or AI agent changes.
-    - Do not move this project's declared architecture directories because the host OS, IDE, compiler, or AI agent changes.
-    - Keep canonical Skills in .agents/skills; tool-specific Skill folders are compatibility mirrors.
-    - Put host OS, IDE, compiler, debugger, and flash tool differences into .workflow/project.yaml, tools/workflow.py, or a platform adapter.
+    - The workflow kit does not ship a default user architecture directory.
+    - Concrete projects must declare architecture directories and dependency rules before code generation.
+    - The workflow keeps a test interface, but it does not create a default Test directory.
+    - Put host OS, IDE, compiler, debugger, flash tool, board, and MCU differences into .workflow/project.yaml, .context/*, tools, or project-owned adapter files.
     - Keep build, flash, review, check, and verify reports under reports with fixed overwrite paths.
 
 architecture:
-  profile: app-service-driver
-  portability_note: App/Service/Driver is this template project's architecture, not a required architecture for every project that reuses the AI workflow.
+  profile: unconfigured
+  portability_note: This repository is a workflow kit. Architecture layers are project facts supplied by the adopting project.
   invariants:
-    - This project uses App, Service, and Driver as its declared architecture layers.
-    - A different project may declare different architecture directories and dependency rules.
-    - Declared architecture layers do not change when the host OS, build tool, IDE, or firmware toolchain changes.
-    - A hardware or MCU migration may change Driver internals and platform bindings, but not this project's declared layer contract.
-    - HAL/Core/Drivers/vendor files are platform adapter boundaries, not project architecture layers owned by application logic.
-  layers:
-    - name: App
-      path: App
-      responsibility: business logic and algorithms without hardware dependency
-      allowed_dependencies: [Service, standard_c]
-      forbidden_dependencies: [Driver, HAL, Core, Drivers]
-    - name: Service
-      path: Service
-      responsibility: hardware feature abstraction and resource coordination
-      allowed_dependencies: [Driver, standard_c]
-      forbidden_dependencies: [App, HAL_direct_register_access]
-    - name: Driver
-      path: Driver
-      responsibility: low-level hardware access and HAL/register wrappers
-      allowed_dependencies: [HAL, CMSIS, standard_c]
-      forbidden_dependencies: [Service, App]
-    - name: HAL
-      path: [Core, Drivers]
-      responsibility: CubeMX generated platform code and vendor libraries
-      allowed_dependencies: [vendor_generated]
-      forbidden_dependencies: [manual_feature_logic]
+    - A concrete project must declare its own architecture layers, ownership rules, and dependency direction.
+    - Workflow directories are not application architecture layers.
+    - Toolchain or host-platform changes must not silently rewrite the adopting project's declared architecture.
+  layers: []
   platform_variable_boundary:
     host_os: [.workflow/project.yaml, tools/workflow.py]
     build_toolchain: [.workflow/project.yaml, tools/workflow.py]
-    mcu_vendor_hal: [Core, Drivers, very_test.ioc]
-    driver_implementation: [Driver]
-  current_project_architecture_boundary:
-    - App
-    - Service
-    - Driver public APIs
-    - Test
+    board_or_mcu: [.context/hardware.yaml, .workflow/project.yaml]
+  current_project_architecture_boundary: []
 
 initialization:
-  entrypoint: Core/Src/main.c
-  function: System_Init
-  intended_order:
-    - low-level driver readiness
-    - service initialization
-    - app initialization
+  entrypoint: unconfigured
+  function: unconfigured
+  intended_order: []
   current_notes:
-    - LOG_Service_Init initializes UART_Driver internally.
-    - LED_Service_Init initializes GPIO and PWM service internally.
-    - PWM_Service_Init initializes GPIO and TIM driver internally.
-    - This differs from the ideal "all Driver_Init in System_Init" rule and should be reviewed before refactoring.
+    - No firmware project is bundled with the workflow kit.
+    - The adopting project should document initialization order here.
 
 ai_rules:
   must_read_before_code_change:
@@ -142,7 +74,7 @@ ai_rules:
     - .agents/rules/git.md
     - .agents/rules/logging.md
     - .workflow/project.yaml
-    - "\u9700\u6c42.md"
+    - 需求.md
   git_required:
     - run git status before editing
     - stage only task-owned changes
@@ -152,12 +84,13 @@ ai_rules:
     - update EVOLUTION.md for framework, rule, Skill, tool, layout, or architecture policy changes
     - stage log updates together with the changes they explain
   do_not_guess:
-    - hardware pin polarity
-    - timer clock and frequency math
+    - architecture directories
+    - board pins and signal polarity
+    - clock rates and timing math
     - toolchain paths and output artifacts
     - current runtime pass/fail state
   update_when_changed:
-    - layout
+    - architecture and layout declarations
     - resource ownership
     - toolchain or generated-code boundary
     - verified runtime state

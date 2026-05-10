@@ -6,9 +6,9 @@
 
 ## Project
 
-- Project: `very_test`
-- Board: `STM32F103 template board`
-- MCU: `STM32F103C8`
+- Project: `embedded-ai-workflow-kit`
+- Board: `unconfigured`
+- MCU: `unconfigured`
 - Reports directory: `reports`
 
 ## Workflow-Invariant Directories
@@ -17,11 +17,11 @@ These directories belong to the reusable AI workflow framework. They are not arc
 
 | Path | Role | Changes when | Exists |
 |------|------|--------------|--------|
-| `docs` | project knowledge base and reference notes | requirements, architecture, hardware facts, or workflow rules change | yes |
+| `docs` | workflow documentation and handoff guides | workflow rules, test checklist, or usage docs change | yes |
 | `.context` | AI handoff fact source | engineering, hardware, version, or runtime facts change | yes |
-| `.workflow` | project configuration source for tools and layout | project name, board, MCU, toolchain, output paths, serial, flash, or layout config changes | yes |
-| `.agents` | agent-neutral AI workflow assets and canonical Skills | AI workflow entrypoints, Skills, or compatibility mirrors change | yes |
-| `tools` | deterministic automation entry points | workflow actions or adapters change | yes |
+| `.workflow` | workflow/project configuration source | project, toolchain, layout, test, flash, or report configuration changes | yes |
+| `.agents` | agent-neutral rules and canonical Skills | Agent rules, Skills, or compatibility metadata change | yes |
+| `tools` | deterministic workflow commands and adapters | workflow actions or adapters change | yes |
 | `reports` | current evidence snapshots for automation reports | build, flash, review, check, or verify evidence is refreshed | yes |
 
 ## Current Project Architecture Directories
@@ -30,10 +30,6 @@ These directories are this project's declared architecture. They are configurabl
 
 | Path | Role | Changes when | Exists |
 |------|------|--------------|--------|
-| `App` | project application layer | business/application behavior changes | yes |
-| `Service` | project service abstraction layer | feature-level hardware services or orchestration change | yes |
-| `Driver` | project driver API layer | board/MCU peripherals change, while preserving public layer contracts | yes |
-| `Test` | project firmware test layer | behavior or driver/service test coverage changes | yes |
 
 ## Platform / Tool Adapter Boundaries
 
@@ -41,21 +37,12 @@ These paths may vary when the MCU, board, IDE, toolchain, generated code, or opt
 
 | Path | Role | Changes when | Exists |
 |------|------|--------------|--------|
-| `Core` | CubeMX/generated platform code | MCU, CubeMX configuration, HAL generation, or platform startup changes | yes |
-| `Drivers` | vendor HAL/CMSIS libraries | vendor package or MCU family changes | yes |
-| `MDK-ARM` | Keil project adapter artifacts | Keil project generation or Keil adapter configuration changes | yes |
-| `.vscode` | local IDE/editor settings | developer workstation/editor configuration changes | yes |
-| `.claude` | optional Claude/Codex skill adapter | that adapter changes; generic agents should not depend on it as the only workflow source | yes |
-| `very_test.ioc` | CubeMX hardware/platform source | CubeMX board, clock, pin, or peripheral configuration changes | yes |
 
 ## Active Tool Adapter
 
 | Fact | Value |
 |------|-------|
-| Active toolchain | `keil` |
-| Tool project file | `MDK-ARM/very_test.uvprojx` |
-| Tool executable | `D:/Keil5/UV4/UV4.exe` |
-| Hex artifact | `MDK-ARM/very_test/very_test.hex` |
+| Active toolchain | `none` |
 | Build log | `reports/build_log.txt` |
 | Flash log | `reports/flash_log.txt` |
 

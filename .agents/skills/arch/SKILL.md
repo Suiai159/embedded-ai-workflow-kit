@@ -1,289 +1,36 @@
 ---
-schema: skill-1.0
 name: arch
-description: 交互式架构规划 - 分析需求.md，澄清模糊点，生成ARCHITECTURE_PLAN.md
+description: Plan or update the adopting project's architecture using requirements and .context facts. Use when defining modules, directories, dependency rules, ownership, initialization order, or test strategy without assuming a default App/Service/Driver layout.
 user-invocable: true
 ---
 
-# /arch — 交互式架构规划
+# /arch
 
-在动手写代码前，先进行交互式架构规划：
-1. **第1轮**：分析需求，识别模糊点，向用户提问
-2. **第2轮**：基于澄清后的需求，生成完整架构设计文档
+Plan architecture for the concrete project using this workflow.
 
-**输入源**：`需求.md`（唯一真相源）
+## Inputs
 
-**输出**：`ARCHITECTURE_PLAN.md` —— 包含模块划分、接口定义、资源分配、数据流
+- `需求.md`
+- `.context/engineering.yaml`
+- `.context/hardware.yaml`
+- `.workflow/project.yaml`
 
----
+## Steps
 
-## 执行步骤
+1. Validate context with `python tools/context.py validate`.
+2. Read the current requirement file.
+3. Identify missing architecture, hardware, toolchain, or test facts.
+4. Propose architecture directories and dependency rules for this project.
+5. Update `.context/engineering.yaml` when the user accepts the architecture.
+6. Regenerate `.project_structure`:
+   ```bash
+   python tools/workflow.py structure
+   ```
+7. Update `PROJECT_LOG.md` and `EVOLUTION.md` when workflow structure changes.
 
-### 1. 前置检查
+## Rules
 
-**检查需求文档是否存在**：
-- 若 `./需求.md` 不存在 → 报错并提示：`❌ 未找到需求.md，请先运行 /req 创建需求文档`
-- 若 `./ARCHITECTURE_PLAN.md` 已存在 → 询问用户：`⚠️ 架构设计文档已存在，是否覆盖？(是/否)`
-
-### 2. 第1轮：需求分析与澄清
-
-**启动 Arch Planner SubAgent（第1轮）**：
-
-```yaml
-agent:
-  name: arch_planner
-  system: .agents/skills/arch/planner/SYSTEM.md
-  prompt: |
-    这是第1轮：需求分析与澄清。
-    
-    请读取以下文件：
-    1. ./需求.md - 需求文档
-    2. ./ARCHITECTURE.md - 项目架构规范（如果存在）
-    
-    任务：
-    1. 深度分析需求，提取：
-       - 外设清单
-       - 功能需求
-       - 时序参数
-       - 测试用例
-    
-    2. 识别模糊点（重点检查）：
-       □ 引脚定义 - 是否指定了具体引脚？（"PC13"=清晰 / "接一个LED"=模糊）
-       □ 时序参数 - 是否具体？（"周期8秒"=清晰 / "快速闪烁"=模糊）
-       □ 阈值边界 - 是否包含等于？（">30"需要确认是≥30还是>30）
-       □ 模式切换 - 状态切换条件是否完整？
-       □ 资源冲突 - 是否多个外设使用相同资源？
-    
-    3. 输出JSON格式结果：
-    ```json
-    {
-      "analysis": {
-        "peripherals": ["LED", "TIM2"],
-        "functions": ["呼吸灯", "PWM输出"],
-        "timing": {"period_ms": 8000}
-      },
-      "clarifications": [
-        {
-          "id": "Q1",
-          "question": "需求中PWM频率≥100Hz，请问具体使用什么频率？",
-          "suggestion": "建议20kHz，可避免肉眼闪烁并留出足够分辨率",
-          "impact": "影响TIM_Driver的分频系数配置"
-        }
-      ],
-      "can_proceed": false
-    }
-    ```
-    
-    规则：
-    - 如果无模糊点，clarifications为空数组，can_proceed=true
-    - 如果有模糊点，can_proceed=false，必须列出所有问题
-```
-
-**处理第1轮结果**：
-
-- **如果 `can_proceed: true`** → 直接进入第2轮
-- **如果 `can_proceed: false`** → 向用户展示问题清单，收集回答
-
-```
-┌─────────────────────────────────────────┐
-│ 需求分析完成，发现以下问题需要澄清：     │
-├─────────────────────────────────────────┤
-│ Q1: [问题描述]                          │
-│     建议: [建议方案]                    │
-│     影响: [技术影响]                    │
-│                                         │
-│ Q2: [问题描述]                          │
-│     ...                                 │
-└─────────────────────────────────────────┘
-
-请回复你的选择：
-- 格式：Q1: [你的回答], Q2: [你的回答]
-- 或："同意所有建议"
-```
-
-### 3. 第2轮：架构设计与文档生成
-
-**启动 Arch Planner SubAgent（第2轮）**：
-
-```yaml
-agent:
-  name: arch_planner
-  system: .agents/skills/arch/planner/SYSTEM.md
-  prompt: |
-    这是第2轮：架构设计与文档生成。
-    
-    请读取以下文件：
-    1. ./需求.md - 原始需求
-    2. ./ARCHITECTURE.md - 项目架构规范
-    
-    澄清回答（用户提供）：
-    {{clarifications}}
-    
-    任务：
-    1. 整合需求 = 原始需求 + 澄清回答
-    
-    2. 模块划分（严格遵循四层架构）：
-       Driver层：每个物理外设一个Driver，封装HAL库
-       Service层：按功能领域划分，组合Driver提供高级功能
-       App层：纯业务逻辑，调用Service实现功能
-    
-    3. 接口设计：
-       - 为每个模块设计C语言接口
-       - 明确参数类型和返回值
-       - 标注回调函数
-    
-    4. 资源检查：
-       - 引脚冲突检查
-       - 定时器冲突检查
-       - 中断优先级检查
-    
-    5. 生成 ./ARCHITECTURE_PLAN.md，包含：
-       - 需求摘要
-       - 模块清单（Driver/Service/App三层表格）
-       - 接口定义（每个模块的头文件接口）
-       - 资源分配表
-       - 初始化顺序图
-       - 数据流图
-    
-    输出要求：
-    - 直接生成文件，不返回JSON
-    - 返回："架构设计完成，已生成 ARCHITECTURE_PLAN.md"
-```
-
-### 4. 完成确认
-
-**向用户报告**：
-
-```
-✅ 架构设计已完成！
-
-文件位置: ./ARCHITECTURE_PLAN.md
-
-包含内容：
-1. 需求摘要 - 关键参数提取
-2. 模块清单 - Driver/Service/App三层划分
-3. 接口定义 - 每个模块的C语言接口
-4. 资源分配 - 引脚、定时器等资源分配
-5. 初始化顺序 - 模块启动依赖关系
-6. 数据流图 - 数据在各层间的流动
-
-下一步建议：
-- 查看 ARCHITECTURE_PLAN.md 确认设计
-- 确认无误后，基于接口定义开始编写代码
-- 编写完成后运行 /build 编译验证
-```
-
----
-
-## 使用示例
-
-### 示例1：有模糊需求（触发澄清）
-
-```
-用户: /arch
-
-系统: 正在分析需求...
-      启动 Arch Planner SubAgent (第1轮)
-
-系统: ┌─────────────────────────────────────────┐
-      │ 需求分析完成，发现以下问题需要澄清：     │
-      ├─────────────────────────────────────────┤
-      │ Q1: PWM频率需求为"≥100Hz"，请问具体使用  │
-      │     什么频率？                           │
-      │     建议：20kHz（无肉眼闪烁，分辨率高）  │
-      │     影响：影响TIM_Driver分频配置         │
-      │                                          │
-      │ Q2: 呼吸曲线"类正弦波"，请问使用哪种算法？│
-      │     建议：正弦表查找 + Gamma校正(2.2)    │
-      │     影响：影响breathe_app实现方式        │
-      └─────────────────────────────────────────┘
-      
-      请回复你的选择：
-
-用户: 同意所有建议
-
-系统: 收到确认，正在生成架构设计...
-      启动 Arch Planner SubAgent (第2轮)
-      
-      ✅ 架构设计已完成！
-      文件位置: ./ARCHITECTURE_PLAN.md
-```
-
-### 示例2：需求清晰（直接生成）
-
-```
-用户: /arch
-
-系统: 正在分析需求...
-      启动 Arch Planner SubAgent (第1轮)
-      
-      需求分析完成，未发现模糊点。
-      直接生成架构设计...
-      
-      启动 Arch Planner SubAgent (第2轮)
-      
-      ✅ 架构设计已完成！
-      文件位置: ./ARCHITECTURE_PLAN.md
-```
-
-### 示例3：需求变更后重新规划
-
-```
-用户: /sync-req "周期从8秒改成10秒"
-      → 更新 需求.md
-
-用户: /arch
-
-系统: ⚠️ 架构设计文档已存在，是否覆盖？(是/否)
-
-用户: 是
-
-系统: 正在分析新需求...
-      （执行第1轮、第2轮）
-      
-      ✅ 架构设计已更新！
-      变更影响：
-      - breathe_app: 周期参数从8000改为10000
-      - 其他模块：无影响
-```
-
----
-
-## 与现有工作流配合
-
-### 完整开发流程
-
-```
-1. 创建需求
-   /req "STM32C8T6实现呼吸灯，周期8秒，PC13低电平有效"
-   → 生成 需求.md
-
-2. 架构规划（交互式）
-   /arch
-   → 生成 ARCHITECTURE_PLAN.md
-
-3. 查看架构设计
-   （阅读 ARCHITECTURE_PLAN.md）
-
-4. 确认或调整
-   如需调整：修改需求.md → 重新运行 /arch
-   确认无误：开始编写代码
-
-5. 编写代码
-   根据 ARCHITECTURE_PLAN.md 的接口定义编写各层代码
-
-6. 检查一致性
-   /build  （自动调用 /check-req）
-
-7. 编译验证
-   /build
-```
-
----
-
-## 注意事项
-
-1. **只做规划，不写实现**：/arch 只生成架构设计文档，不生成具体代码
-2. **需求驱动**：始终以需求.md为唯一输入源，不接受口头需求变更
-3. **交互式澄清**：有模糊点时先澄清再设计，避免返工
-4. **覆盖确认**：重新运行时会询问是否覆盖已有架构文档
+- Do not assume App/Service/Driver.
+- Do not create architecture directories until the project declares them.
+- Keep workflow directories separate from project architecture directories.
+- Keep testing as an explicit part of the architecture, even if the project has no `Test/` directory.

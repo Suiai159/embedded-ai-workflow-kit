@@ -1,6 +1,6 @@
 ---
 name: build
-description: Build the configured embedded project through tools/workflow.py. Use for compiling firmware regardless of the board name or development tool; adapters include Keil, GCC command, and CMake.
+description: Build the configured embedded project through tools/workflow.py. Use for compiling firmware regardless of board, host platform, or development tool.
 user-invocable: true
 ---
 
@@ -20,6 +20,6 @@ Build the project described by `.workflow/project.yaml`.
 
 ## Rules
 
-- Do not hard-code project names, board names, Keil paths, or hex paths.
+- Do not hard-code project names, board names, tool paths, or artifact paths.
 - Treat `tools/workflow.py` as the build adapter boundary.
-- Supported adapters: `toolchain.type: keil`, `gcc`, and `cmake`.
+- Supported adapters are discovered from `.workflow/project.yaml` and `tools/workflow.py`.

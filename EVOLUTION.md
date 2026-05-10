@@ -4,7 +4,26 @@
 
 ---
 
+## 2026-05-10
+
+### [cleanup] 切换为未配置 workflow kit
+
+**目标**：让用户拿到 workflow 文件夹后不需要删除与自己工程无关的板卡、工具链、架构和 Agent 私有残留。
+
+**改造**：
+- [structure] 删除默认用户工程架构目录、CubeMX 生成代码、Keil 工程和 Claude Code 私有目录
+- [config] `.workflow/project.yaml` 改为 `workflow.mode: workflow_kit`，默认 `toolchain.type: none`
+- [context] `.context/*` 改为未配置项目事实，不再记录 STM32F103、Keil、CubeMX、App/Service/Driver
+- [test] 保留 `build.test_command`、`verify.command`、`layout.tests` 等测试接口，但默认不创建 `Test/` 目录
+- [tool] `context.py` 支持 workflow kit 模式；`workflow.py build/flash` 在未配置 adapter 时给出明确错误
+- [tool] 删除旧的 Keil shell wrapper 和独立 `inject_test_mode.py`
+- [doc] 删除旧板卡/外设参考文档，重写 README、项目介绍、工作流说明和测试清单为通用 workflow kit 文档
+- [agent] 移除 `.claude` 兼容镜像要求，`.agents/skills` 成为唯一 canonical Skill 源
+
+---
+
 ## 2026-05-06
+
 
 ### [doc] 明确 Agent-neutral 工程定位
 

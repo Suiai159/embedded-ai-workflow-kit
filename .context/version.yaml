@@ -1,53 +1,43 @@
 schema: context-version-1.0
 context_kind: version
 project:
-  name: very_test
-  ioc_file: very_test.ioc
+  name: embedded-ai-workflow-kit
+  kind: workflow_kit
   workflow_config: .workflow/project.yaml
 
 toolchain:
-  active_adapter: keil
-  keil:
-    exe: D:/Keil5/UV4/UV4.exe
-    compiler: ARMCC
-    compiler_version_observed: "V5.06 update 5 (build 528)"
-    evidence: reports/build_log.txt
+  active_adapter: none
   gcc:
     status: adapter_available_not_active
   cmake:
     status: adapter_available_not_active
+  keil:
+    status: adapter_available_not_active
 
 generated_code_boundaries:
-  cube_generated:
-    - Core
-    - Drivers
-    - MDK-ARM/very_test.uvprojx
-    - very_test.ioc
+  generated_or_external: []
   human_maintained:
-    - App
-    - Service
-    - Driver
-    - Test
-    - tools
     - AGENTS.md
     - .agents/rules
     - .agents/skills
-    - .claude/skills
     - .context
     - .workflow
+    - docs
+    - reports/README.md
+    - tools
 
 critical_scripts:
   workflow_cli: tools/workflow.py
   context_cli: tools/context.py
   git_guard: tools/git_guard.py
   log_guard: tools/log_guard.py
+  agent_assets: tools/agent_assets.py
+  project_structure: tools/project_structure.py
   dev_orchestrator: tools/dev_orchestrator.py
-  driver_dev: tools/driver_dev.py
-  inject_test_mode: tools/inject_test_mode.py
 
 compatibility_notes:
-  - Keil is the active project adapter.
-  - GCC and CMake adapters are available in tools/workflow.py but not active in this project config.
-  - AGENTS.md is the agent-neutral entry point; .agents/skills is the canonical Skill source.
-  - .claude/skills is a Claude/Codex compatibility mirror.
-  - Treat CubeMX generated files as generated-code boundary unless the task explicitly targets platform regeneration.
+  - This repository is a workflow kit, not a configured firmware project.
+  - GCC, CMake, and Keil adapters exist in tools/workflow.py but are not active until .workflow/project.yaml is configured.
+  - AGENTS.md is the agent-neutral entry point.
+  - .agents/skills is the canonical Skill source.
+  - Tool-specific compatibility mirrors are optional and should not be committed as canonical workflow facts.

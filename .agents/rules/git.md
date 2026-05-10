@@ -34,6 +34,6 @@ python tools/git_guard.py commit --message "type: concise summary" --paths <file
 - Commit messages should be concise and describe the engineering change.
 - Stage task-owned changes before validation so the candidate checkpoint is explicit.
 - Do not commit generated build artifacts unless they are intentionally tracked project files.
-- Do not stage local settings such as `.claude/settings.local.json`.
+- Do not stage local settings from any agent or editor, for example private settings files under tool-specific hidden directories.
 - Do not stage unrelated generated files such as dependency `.d` files unless the task explicitly owns them.
 - If a command cannot commit because of permissions, request approval for the git command rather than leaving changes uncommitted.

@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 
-ROOT_MARKERS = (".workflow/project.yaml", "AGENTS.md", "CLAUDE.md", ".git")
+ROOT_MARKERS = (".workflow/project.yaml", "AGENTS.md", ".git")
 
 
 class WorkflowError(RuntimeError):
@@ -148,6 +148,10 @@ def require_toolchain(config: Dict[str, Any], supported: Iterable[str]) -> str:
     if toolchain not in supported:
         raise WorkflowError(f"Unsupported toolchain adapter: {toolchain}")
     return toolchain
+
+
+def is_workflow_kit(config: Dict[str, Any]) -> bool:
+    return cfg_get(config, "workflow.mode", cfg_get(config, "project.kind", "")) == "workflow_kit"
 
 
 def shell_join(command: Any) -> str:
@@ -279,8 +283,8 @@ def inject_test_mode(project_file: Path) -> None:
 
 
 def command_verify_config(root: Path, config: Dict[str, Any]) -> int:
-    require_config(config, ["project.name", "toolchain.type", "layout.driver", "layout.test", "layout.reports"])
-    toolchain = require_toolchain(config, ("keil", "gcc", "cmake"))
+    require_config(config, ["project.name", "toolchain.type", "layout.reports"])
+    toolchain = require_toolchain(config, ("none", "keil", "gcc", "cmake"))
 
     if toolchain == "keil":
         require_config(config, ["toolchain.project_file", "toolchain.exe", "build.hex_path"])
@@ -291,6 +295,7 @@ def command_verify_config(root: Path, config: Dict[str, Any]) -> int:
 
     summary = {
         "project": cfg_get(config, "project.name"),
+        "workflow_mode": cfg_get(config, "workflow.mode", cfg_get(config, "project.kind", "")),
         "board": cfg_get(config, "board.name", ""),
         "mcu": cfg_get(config, "mcu.family", ""),
         "toolchain": toolchain,
@@ -311,12 +316,17 @@ def command_verify_config(root: Path, config: Dict[str, Any]) -> int:
     elif toolchain == "cmake":
         summary["source_dir"] = str(resolve_project_path(root, str(cfg_get(config, "toolchain.source_dir"))))
         summary["build_dir"] = str(resolve_project_path(root, str(cfg_get(config, "toolchain.build_dir"))))
+    elif toolchain == "none":
+        summary["configured"] = False
+        summary["message"] = "Workflow kit mode: configure .workflow/project.yaml before build/flash."
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0
 
 
 def command_build(root: Path, config: Dict[str, Any], test_mode: bool) -> int:
-    toolchain = require_toolchain(config, ("keil", "gcc", "cmake"))
+    toolchain = require_toolchain(config, ("none", "keil", "gcc", "cmake"))
+    if toolchain == "none":
+        raise WorkflowError("No build adapter configured. Set `toolchain.type` and build settings in .workflow/project.yaml.")
     if toolchain == "keil":
         return build_keil(root, config, test_mode)
     if toolchain == "gcc":
@@ -478,7 +488,9 @@ def build_cmake(root: Path, config: Dict[str, Any], test_mode: bool) -> int:
 
 
 def command_flash(root: Path, config: Dict[str, Any]) -> int:
-    toolchain = require_toolchain(config, ("keil", "gcc", "cmake"))
+    toolchain = require_toolchain(config, ("none", "keil", "gcc", "cmake"))
+    if toolchain == "none":
+        raise WorkflowError("No flash adapter configured. Set `toolchain.type` and flash settings in .workflow/project.yaml.")
     method = flash_method(config) or ("keil" if toolchain == "keil" else "command")
     if method == "keil":
         return flash_keil(root, config)
@@ -598,7 +610,9 @@ def add_file_to_group(groups: ET.Element, group_name: str, filename: str, filepa
 
 
 def command_register_driver(root: Path, config: Dict[str, Any], name: str) -> int:
-    toolchain = require_toolchain(config, ("keil", "gcc", "cmake"))
+    toolchain = require_toolchain(config, ("none", "keil", "gcc", "cmake"))
+    if toolchain == "none":
+        raise WorkflowError("No project architecture/tool adapter configured for source registration.")
     if toolchain == "keil":
         return register_driver_keil(root, config, name)
     command = cfg_get(config, "register_driver.command")

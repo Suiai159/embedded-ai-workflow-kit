@@ -1,99 +1,25 @@
 ---
-schema: skill-1.0
 name: code-reviewer
-description: Review embedded C code against project requirements, the architecture declared in .context/engineering.yaml, hardware resource ownership, ISR safety, timing, stack, and generated-code boundaries.
+description: Review embedded project changes against requirements, the architecture declared in .context/engineering.yaml, hardware facts, runtime constraints, and report rules. Use for code review without assuming STM32, HAL, Keil, CubeMX, or a specific directory layout.
 user-invocable: true
 ---
 
-# Code Reviewer SubAgent
+# /code-reviewer
 
-专门的嵌入式代码审查助手，通过 AI 直接分析源代码，完成硬件配置验证与代码逻辑安全检查。
+Review code for the concrete project that adopted this workflow.
 
-## 执行命令
+## Steps
 
-当用户调用 `skill: code-reviewer` 时，执行：
+1. Run `python tools/context.py validate`.
+2. Read `.context/engineering.yaml`, `.context/hardware.yaml`, `.context/version.yaml`, and `.workflow/project.yaml`.
+3. Review only the files relevant to the current task.
+4. Check requirements consistency, architecture boundaries, resource ownership, blocking behavior, stack/memory risk, and test coverage.
+5. Write findings to `reports/code_review_report.md`.
+6. Update `PROJECT_LOG.md`.
 
-```
-Agent: code-reviewer
-Prompt: 见下方「调用 Prompt」
-```
+## Rules
 
-## 调用方式
-
-### 方式 1: 直接调用 Skill（默认全查）
-```
-skill: code-reviewer
-args: Core/Src/main.c Driver/tim_driver.c Service/ App/
-```
-
-### 方式 2: 侧重硬件配置审查
-```
-skill: code-reviewer
-args: --focus=hw Core/Src Driver/
-```
-
-### 方式 3: 侧重代码逻辑安全审查
-```
-skill: code-reviewer
-args: --focus=logic App/ Service/
-```
-
-### 方式 4: 主 Agent 直接通过 subAgent 调用
-```
-Agent: code-reviewer
-Prompt: 请审查 Core/Src/main.c 和 Driver/tim_driver.c，关注 TIM2 时钟配置和 ISR 安全
-```
-
-## 参数说明
-
-| 参数 | 说明 |
-|------|------|
-| `--focus=hw` | 只查硬件配置（引脚、时钟、外设结构体、DMA 参数等） |
-| `--focus=logic` | 只查代码逻辑（ISR 安全、死循环、栈溢出、算法逻辑等） |
-| 无参数或 `--focus=all` | 全查（默认） |
-
-## 输入源
-
-审查前必须读取以下文件作为输入：
-1. **AI 接手上下文摘要**：运行 `python tools/context.py summary`
-2. **工程上下文**：`.context/engineering.yaml`
-3. **硬件上下文**：`.context/hardware.yaml`
-4. **待审查的源代码文件**（由 args 指定）
-5. **需求文档**：`需求.md`（若存在）
-
-## 输出
-
-生成结构化审查报告，保存到 `reports/code_review_report.md`。
-
-报告包含：
-- 概要（文件数、问题数、需求符合度）
-- 硬件配置检查项（按外设分类）
-- 代码逻辑安全检查项
-- 需求符合性分析
-- 优先级修复列表
-
-## 工作流程
-
-```
-主 Agent                   Code Reviewer SubAgent
-   │                              │
-   │── 1. 调用 Skill / subAgent ──▶│
-   │   (提供文件路径 + focus 参数)  │
-   │                              │
-   │                              ├── 2. 读取需求.md（若存在）
-   │                              ├── 3. 读取所有待审查文件
-   │                              ├── 4. 逐文件逐条审查规则
-   │                              ├── 5. 跨文件关联检查（时钟/引脚）
-   │                              ├── 6. 生成结构化报告
-   │                              │
-   │◀─ 7. 返回报告路径 ───────────│
-   │                              │
-   │── 8. 主 Agent 决策修复方案   │
-```
-
-## 注意事项
-
-1. **Code Reviewer 只负责分析，不修改代码**
-2. **主 Agent 负责决策** — 哪些问题需要修复、如何修复
-3. **AI 直接读文件做语义分析**，不依赖正则脚本
-4. 旧版 Python 脚本 `tools/code_reviewer.py` 保留作为 CI/CD 无 AI 环境的兜底方案
+- Do not assume a specific HAL, MCU, IDE, or directory layout.
+- Use `tools/code_reviewer_config.json` only as project-specific configuration.
+- If architecture or hardware facts are missing, report the missing facts instead of guessing.
+- Findings must be actionable and reference exact files/lines when possible.

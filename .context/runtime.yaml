@@ -1,33 +1,27 @@
 schema: context-runtime-1.0
 context_kind: runtime
 status:
-  handoff_state: dirty_worktree
-  last_known_build: pass
-  last_known_flash: fail
-  last_known_verify: fail
-  updated_at: '2026-05-06 20:13:59'
+  handoff_state: workflow_kit_unconfigured
+  last_known_build: not_configured
+  last_known_flash: not_configured
+  last_known_verify: not_configured
+  updated_at: '2026-05-10'
 last_build:
-  result: pass
-  evidence: reports/build_log.txt
-  summary: Build log reports 0 Error(s).
+  result: not_configured
+  evidence: ''
+  summary: No concrete project build adapter is configured.
 last_flash:
-  result: fail
-  evidence: reports/flash_log.txt
-  summary: Flash log indicates failure.
+  result: not_configured
+  evidence: ''
+  summary: No concrete project flash adapter is configured.
 last_verify:
-  result: fail
-  evidence: reports/verify_report.md
-  summary: '解析需求文档失败: ''gbk'' codec can''t encode character ''\u2713'' in position
-    2: illegal multibyte sequence'
+  result: not_configured
+  evidence: ''
+  summary: Test/verify interface is retained but no concrete project test command is configured.
 serial:
-  port: auto
+  port: unconfigured
   baudrate: 115200
-known_issues:
-- id: VERIFY_FAILED
-  status: open
-  evidence: reports/verify_report.md
-  summary: '解析需求文档失败: ''gbk'' codec can''t encode character ''\u2713'' in position
-    2: illegal multibyte sequence'
+known_issues: []
 handoff_notes:
-- The repository has uncommitted changes from workflow and verification work.
-- Runtime context is a current snapshot, not a historical log.
+  - Configure .workflow/project.yaml and .context/* after copying this workflow kit into a concrete project.
+  - Runtime context is a current snapshot, not a historical log.

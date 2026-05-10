@@ -1,40 +1,31 @@
 # Version Context
 
-This file records compatibility-sensitive project facts. The machine-readable companion is `.context/version.yaml`.
+This repository is currently an unconfigured workflow kit.
 
 ## Active Toolchain
 
-The active adapter is Keil, configured in `.workflow/project.yaml`.
+No build adapter is active by default.
 
-The last observed compiler line in `reports/build_log.txt` is:
+Available adapter implementations live in `tools/workflow.py`:
 
-```text
-ARMCC V5.06 update 5 (build 528)
-```
+- `gcc`
+- `cmake`
+- `keil`
 
-GCC and CMake adapters exist in `tools/workflow.py`, but this template has not been migrated to a GCC/CMake firmware project yet.
+A concrete project must choose and configure one in `.workflow/project.yaml`.
 
 ## Generated Code Boundary
 
-Treat these as generated or tool-owned unless the task explicitly says otherwise:
+No generated firmware code is bundled with the kit.
 
-- `Core/`
-- `Drivers/`
-- `MDK-ARM/very_test.uvprojx`
-- `very_test.ioc`
+Treat these as human-maintained workflow assets:
 
-Treat these as hand-maintained workflow/application areas:
-
-- `App/`
-- `Service/`
-- `Driver/`
-- `Test/`
-- `tools/`
 - `AGENTS.md`
-- `.agents/rules/`
-- `.agents/skills/`
-- `.claude/skills/`
+- `.agents/`
 - `.context/`
 - `.workflow/`
+- `docs/`
+- `reports/README.md`
+- `tools/`
 
-`AGENTS.md` is the agent-neutral entry point. `.agents/skills/` is the canonical Skill source. `.claude/skills/` is a Claude/Codex compatibility mirror, not the project default.
+Generated code, IDE files, vendor libraries, CubeMX output, and tool-specific Agent mirrors should be added by the adopting project only when they are actually used.

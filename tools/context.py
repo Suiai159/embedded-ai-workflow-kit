@@ -23,7 +23,7 @@ if sys.platform == "win32":
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
 
-ROOT_MARKERS = (".context", ".workflow/project.yaml", "CLAUDE.md", ".git")
+ROOT_MARKERS = (".context", ".workflow/project.yaml", "AGENTS.md", ".git")
 KINDS = ("engineering", "hardware", "version", "runtime")
 
 
@@ -121,43 +121,41 @@ def validate(root: Path) -> Tuple[List[str], List[str]]:
         return [str(exc)], warnings
 
     workflow = load_yaml(root / ".workflow" / "project.yaml")
+    workflow_mode = cfg_get(workflow, "workflow.mode", cfg_get(workflow, "project.kind", "project"))
+    is_workflow_kit = workflow_mode == "workflow_kit"
     reports_dir = str(cfg_get(workflow, "layout.reports", "reports"))
 
-    errors += require_keys(
-        data["engineering"],
-        [
-            "source_of_truth.workflow_config",
-            "source_of_truth.agent_rules",
-            "layout.app",
-            "layout.service",
-            "layout.driver",
-            "layout.test",
-            "layout.reports",
-            "directory_policy.workflow_invariant",
+    engineering_required = [
+        "source_of_truth.workflow_config",
+        "source_of_truth.agent_rules",
+        "layout.reports",
+        "directory_policy.workflow_invariant",
+        "ai_rules.must_read_before_code_change",
+    ]
+    if not is_workflow_kit:
+        engineering_required += [
             "directory_policy.project_architecture",
-            "directory_policy.platform_or_tool_variable",
             "architecture.layers",
-            "ai_rules.must_read_before_code_change",
-        ],
-        "engineering",
-    )
-    errors += require_keys(
-        data["hardware"],
-        ["mcu.family", "mcu.device", "resources"],
-        "hardware",
-    )
-    errors += require_keys(
-        data["version"],
-        ["project.name", "toolchain.active_adapter", "generated_code_boundaries.cube_generated"],
-        "version",
-    )
+        ]
+    errors += require_keys(data["engineering"], engineering_required, "engineering")
+
+    hardware_required = ["mcu.family", "mcu.device"]
+    if not is_workflow_kit:
+        hardware_required.append("resources")
+    errors += require_keys(data["hardware"], hardware_required, "hardware")
+
+    version_required = ["project.name", "toolchain.active_adapter"]
+    if not is_workflow_kit:
+        version_required.append("generated_code_boundaries.cube_generated")
+    errors += require_keys(data["version"], version_required, "version")
     errors += require_keys(
         data["runtime"],
         ["status.handoff_state", "status.last_known_build", "status.last_known_flash", "status.last_known_verify"],
         "runtime",
     )
 
-    for key in ("app", "service", "driver", "test", "reports"):
+    layout_keys = set(cfg_get(data["engineering"], "layout", {}).keys()) | set(cfg_get(workflow, "layout", {}).keys())
+    for key in sorted(layout_keys):
         context_value = cfg_get(data["engineering"], f"layout.{key}")
         workflow_value = cfg_get(workflow, f"layout.{key}")
         if context_value != workflow_value:
@@ -184,7 +182,7 @@ def validate(root: Path) -> Tuple[List[str], List[str]]:
         if not path_value:
             errors.append("engineering: project architecture directory item missing `path`")
             continue
-        if not (root / str(path_value)).exists():
+        if not is_workflow_kit and not (root / str(path_value)).exists():
             errors.append(f"engineering: project architecture path missing: {path_value}")
 
     for item in cfg_get(data["engineering"], "directory_policy.platform_or_tool_variable", []):
@@ -231,7 +229,12 @@ def validate(root: Path) -> Tuple[List[str], List[str]]:
     if log_guard and not (root / str(log_guard)).exists():
         errors.append(f"version: log guard script missing: {log_guard}")
 
-    for path_value in cfg_get(data["version"], "generated_code_boundaries.cube_generated", []):
+    generated_paths = cfg_get(
+        data["version"],
+        "generated_code_boundaries.cube_generated",
+        cfg_get(data["version"], "generated_code_boundaries.generated_or_external", []),
+    )
+    for path_value in generated_paths:
         if not path_exists_or_external(root, path_value):
             warnings.append(f"version: generated boundary path not found: {path_value}")
 
@@ -258,6 +261,7 @@ def print_summary(root: Path) -> int:
     print("")
     print("## Engineering")
     print(f"- Project: {cfg_get(workflow, 'project.name', cfg_get(data['version'], 'project.name', 'unknown'))}")
+    print(f"- Workflow mode: {cfg_get(workflow, 'workflow.mode', cfg_get(workflow, 'project.kind', 'project'))}")
     print(f"- Toolchain adapter: {cfg_get(workflow, 'toolchain.type', cfg_get(data['version'], 'toolchain.active_adapter', 'unknown'))}")
     print(f"- Architecture profile: {cfg_get(data['engineering'], 'architecture.profile', 'custom')}")
     layer_names = [
@@ -291,7 +295,12 @@ def print_summary(root: Path) -> int:
     print("## Version")
     print(f"- Active adapter: {cfg_get(data['version'], 'toolchain.active_adapter')}")
     print(f"- Observed compiler: {cfg_get(data['version'], 'toolchain.keil.compiler_version_observed', 'unknown')}")
-    print("- Generated boundary: " + ", ".join(str(p) for p in cfg_get(data["version"], "generated_code_boundaries.cube_generated", [])))
+    generated = cfg_get(
+        data["version"],
+        "generated_code_boundaries.cube_generated",
+        cfg_get(data["version"], "generated_code_boundaries.generated_or_external", []),
+    )
+    print("- Generated boundary: " + (", ".join(str(p) for p in generated) if generated else "none configured"))
     print("")
     print("## Runtime")
     print(f"- Handoff state: {cfg_get(data['runtime'], 'status.handoff_state')}")

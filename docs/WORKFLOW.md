@@ -1,39 +1,59 @@
-# 开发工作流程规范
+# Workflow Rules
 
-## 自动代码审查流程
+This workflow kit is project-neutral. It orchestrates work, but the adopting project provides architecture, hardware, toolchain, and test facts.
 
-### 标准流程
+## Standard Flow
 
+```text
+context validate
+→ requirement update
+→ architecture/design update
+→ code change
+→ review/check
+→ build
+→ test/verify
+→ reports/runtime update
+→ log update
+→ staged checkpoint
+→ commit after validation
 ```
-用户需求 → 编写代码 → 自动审查 → 修复问题 → 重新审查 → 编译验证 → 烧录测试
+
+## Required Checks
+
+```bash
+python tools/context.py validate
+python tools/workflow.py verify-config
+python tools/agent_assets.py validate
+python tools/log_guard.py validate --mode either
 ```
 
-### 关键规则
+## Build And Flash
 
-1. **自动触发**：代码编写完成后，**必须**主动调用 `code-reviewer` SubAgent，不需要用户说"帮我审查"
-2. **深度审查**：使用 SubAgent 进行全面检查（非简单脚本扫描）
-3. **迭代修复**：发现问题后自动修复并重新审查，直至通过
-4. **质量门禁**：严重问题 🔴 必须修复后才能进入下一阶段
+Use `tools/workflow.py`; do not hard-code tool commands in Agent prompts.
 
-### 审查重点
+```bash
+python tools/workflow.py build
+python tools/workflow.py build --test
+python tools/workflow.py flash
+```
 
-| 优先级 | 检查项 | 说明 |
-|--------|--------|------|
-| 🔴 | ISR 安全性 | 中断服务程序中无阻塞操作（HAL_Delay、printf） |
-| 🔴 | 死循环保护 | 所有轮询等待必须有超时机制 |
-| 🔴 | 需求符合性 | GPIO、PWM、时序是否符合需求文档 |
-| 🟡 | 共享变量 | 32位变量访问的原子性问题 |
-| 🟡 | 栈溢出 | 大数组不分配在栈上 |
-| 🟡 | 架构合规 | 分层依赖方向、重复初始化、资源冲突 |
+If `toolchain.type: none`, build/flash should stop with a clear configuration message.
 
-### 质量门禁
+## Testing
 
-- **🔴 严重**：必须修复（死循环、阻塞ISR、资源冲突）
-- **🟡 警告**：建议修复（代码风格、可优化逻辑）
-- **💡 建议**：可选优化（注释、命名改进）
+The workflow keeps test interfaces but does not create a default test directory.
 
-## 与CLAUDE.md的关系
+Concrete projects can configure:
 
-- `CLAUDE.md`：项目概述 + 快速索引
-- `ARCHITECTURE.md`：分层架构详细规范
-- `WORKFLOW.md`：本文件，工作流程详细规范
+- `build.test_command`
+- `verify.command`
+- `layout.tests`
+- `verify.report_path`
+
+## Reports
+
+All generated evidence goes under `reports/` with stable overwrite paths.
+
+## Git And Logs
+
+Agents must update durable logs, stage task-owned files, validate, then commit the usable checkpoint.

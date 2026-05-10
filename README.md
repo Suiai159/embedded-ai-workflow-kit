@@ -1,323 +1,116 @@
-# STM32F103 模板工程
+# Embedded AI Workflow Kit
 
-## 可复用工作流配置
+这是一个可复制到任意嵌入式工程里的 AI 工作流工具包。它不绑定板子、MCU、IDE、工具链、目录架构或特定 Agent。
 
-本模板现在把工程工作流配置集中放在 `.workflow/project.yaml`。AI Agent 负责流程编排，`tools/workflow.py` 负责确定性动作，当前支持 Keil、GCC 命令式构建和 CMake adapter。
+目标是让用户把这些 workflow 文件放进自己的工程后，通过配置文件声明项目事实，而不是先删除一堆与自己无关的 STM32、CubeMX、Keil 或 Claude Code 残留。
 
-常用入口：
+## 核心目录
+
+```text
+.agents/      # Agent-neutral 规则和 canonical Skills
+.context/     # AI 接手事实源
+.workflow/    # 项目/工具链/布局配置
+docs/         # 工作流说明和测试清单
+reports/      # 当前证据快照，默认覆盖
+tools/        # 确定性工具和 adapter
+AGENTS.md     # 通用 Agent 入口
+PROJECT_LOG.md
+EVOLUTION.md
+```
+
+默认不包含：
+
+- 用户工程架构目录，例如 `App/`, `Service/`, `Driver/`
+- 用户测试目录，例如 `Test/`
+- CubeMX 生成代码
+- Keil/CMake/GCC 工程文件
+- 板卡、MCU、引脚、时钟、外设事实
+- `.claude/` 等工具私有 Agent 目录
+
+## 接入一个真实工程
+
+1. 复制 workflow 目录和入口文件到你的工程。
+2. 修改 `.workflow/project.yaml`：
+   - `project.name`
+   - `toolchain.type`
+   - `build.*`
+   - `flash.*`
+   - `verify.*`
+   - `layout.architecture`
+   - `layout.tests`
+3. 修改 `.context/*.yaml`，记录架构、硬件、版本、运行状态。
+4. 运行校验：
 
 ```bash
+python tools/context.py validate
+python tools/workflow.py verify-config
+python tools/agent_assets.py validate
+python tools/project_structure.py generate
+python tools/project_structure.py validate
+```
+
+## 架构原则
+
+workflow 不强制任何架构命名。用户项目可以是：
+
+- `App/Service/Driver`
+- `Application/Domain/Platform`
+- `src/include/tests`
+- RTOS task/module/component 风格
+
+唯一要求是：在 `.context/engineering.yaml` 中说清楚架构目录、依赖方向、所有权和生成代码边界。
+
+## 测试接口
+
+默认不创建 `Test/` 目录，因为用户可能已有自己的测试布局。但 workflow 保留测试接口：
+
+- `.workflow/project.yaml` 的 `build.test_command`
+- `.workflow/project.yaml` 的 `verify.command`
+- `.workflow/project.yaml` 的 `layout.tests`
+- `reports/verify_report.md`
+- `.context/runtime.yaml` 的 verify 快照
+
+## 常用命令
+
+```bash
+python tools/context.py summary
+python tools/context.py validate
 python tools/workflow.py verify-config
 python tools/workflow.py build
 python tools/workflow.py build --test
 python tools/workflow.py flash
-python tools/workflow.py register-driver --name st7789
 python tools/workflow.py status
-```
-
-复制到新项目时，优先修改 `.workflow/project.yaml` 中的 `project.name`、`toolchain.*`、`build.*`、`flash.*` 和 `layout.*`，不要在 Skill 或脚本里写死板子、工程名和工具路径。
-
-工具链选择：
-
-- `toolchain.type: keil`：使用 `.uvprojx` 和 Keil MDK。
-- `toolchain.type: gcc`：使用 `build.command` / `build.test_command`，适合 Makefile、脚本化 GCC 工程。
-- `toolchain.type: cmake`：使用 `cmake -S/-B` 和 `cmake --build`，适合跨平台工程。
-
-## AI 接手上下文
-
-本模板使用 `.context/` 保存 AI 接手所需事实：
-
-- `engineering.*`：工程结构、分层规则、初始化现实
-- `hardware.*`：MCU、时钟、引脚、外设、资源所有权
-- `version.*`：工具链、生成代码边界、关键脚本
-- `runtime.*`：最近一次构建、烧录、验证状态
-
-常用入口：
-
-```bash
-python tools/context.py validate
-python tools/context.py summary
-python tools/context.py touch-runtime
-```
-
-换 AI、换工具链或排查硬件问题前，先读 `AGENTS.md`，再看 `python tools/context.py summary`。前者是通用接手协议，后者是当前工程事实快照。
-
-> **工程定位**：这是一个**通用可复制的 STM32 嵌入式开发模板**，用于作为新项目的基础起点。
->
-> 它不仅包含一个可编译的 Keil 工程，还包含完整的 **AI Agent 辅助开发工作流**、**四层分层架构规范**和**自动化工具链**。
-
----
-
-## 核心特性
-
-| 特性 | 说明 |
-|------|------|
-| **可配置分层架构** | 当前模板使用 App → Service → Driver；复用到其他项目时可在 `.context/engineering.yaml` 声明不同架构 |
-| **需求驱动开发** | `需求.md` 是唯一真相源，代码从需求文档生成 |
-| **Agent-neutral 工作流** | 从需求分析、架构设计、代码生成到编译烧录的全流程自动化辅助；`.agents/skills/` 是通用 Skill 源，Claude Skill 只是兼容镜像 |
-| **驱动开发支持** | 支持从零根据 datasheet 生成 Driver 层代码和测试代码 |
-| **AI 代码审查** | `code-reviewer` 升级为 AI SubAgent 语义分析，覆盖硬件配置与时序计算 |
-| **固件自验证框架** | `verify` 编译 TEST_MODE 固件，自动跑测试并输出结构化 JSON |
-| **项目日志总控** | `/dev` 这类 Agent 命令自动管理任务链、记录进度、推进工作流 |
-| **Keil 自动集成** | 新增文件自动注册到 `.uvprojx` 工程，无需手动添加 |
-
----
-
-## 快速开始
-
-### 1. 复制本模板到新项目
-
-```bash
-# 方法1: 直接复制目录
-cp -r very_test my_new_project
-cd my_new_project
-rm -rf .git
-git init
-
-# 方法2: 从本模板 fork 后修改项目名
-```
-
-### 2. 修改项目标识
-
-- 修改 `.workflow/project.yaml` 中的项目名、工程文件、hex 输出、工具链路径和目录布局
-- 如需重命名 Keil 工程文件，再同步修改 `toolchain.project_file` 和 `build.hex_path`
-- 修改 `CLAUDE.md` 和 `README.md` 中仍需展示给人的项目名称
-- 清空 `PROJECT_LOG.md` 中的历史记录
-- 清空 `EVOLUTION.md` 中的历史记录（保留文件）
-
-### 3. 开始你的第一个需求
-
-```bash
-# 创建需求文档
-/req "STM32F103C8T6 实现 xxx 功能"
-
-# 架构规划
-/arch
-
-# 生成代码后自动审查和编译
-/dev --go
-```
-
----
-
-## 目录结构
-
-```text
-very_test/
-├── App/                 # 业务逻辑层（无硬件依赖）
-│   ├── breathe_app.c
-│   ├── test_breathe.h      # 固件自验证用例
-│   └── test_framework.h    # 轻量 JSON 测试框架
-├── Service/             # 功能服务层（组合 Driver 提供高级接口）
-├── Driver/              # 硬件驱动层（封装 HAL）
-├── Core/                # CubeMX 生成的 main.c、中断等平台代码
-│   ├── Inc/
-│   └── Src/
-├── Drivers/             # HAL 库、CMSIS
-├── Test/                # 驱动测试代码（持久保留）
-├── MDK-ARM/             # Keil 工程文件
-├── tools/               # 自动化脚本和工具
-│   ├── build_keil.sh
-│   ├── flash_keil.sh
-│   ├── code_reviewer.py      # 静态代码审查（CI 兜底）
-│   ├── driver_dev.py         # 驱动开发辅助 + Keil 工程自动注册
-│   ├── inject_test_mode.py   # 向 uvprojx 注入 TEST_MODE 宏
-│   └── dev_orchestrator.py   # 项目总控脚本
-├── .agents/             # Agent-neutral AI 工作流资产与 canonical Skills
-│   └── skills/
-├── .claude/skills/      # Claude/Codex Skill 兼容镜像
-├── docs/                # 规范文档与参考资料
-│   ├── ARCHITECTURE.md
-│   ├── WORKFLOW.md
-│   ├── 外设驱动花名册.md
-│   └── reference/          # 跨平台复用参考知识库
-│       ├── gpio.md
-│       ├── timer.md
-│       ├── uart.md
-│       ├── led.md
-│       └── platform-notes.md
-├── reports/             # Skill 审查报告输出（不纳入 git）
-├── AGENTS.md            # 通用 AI Agent 接手入口
-├── CLAUDE.md            # Claude Code 兼容入口（内容遵循通用 Agent 规范）
-├── EVOLUTION.md         # 工程演进日志（结构变更、Skill 迭代）
-├── PROJECT_LOG.md       # 项目进度日志（日常开发任务）
-├── 需求.md               # 当前项目需求文档
-└── README.md            # 本文件
-```
-
-**重要规则**：
-
-- `App/`、`Service/`、`Driver/` 是当前模板工程的默认架构层，不是所有复用项目必须采用的目录名
-- 换 MCU/开发板时可以改 `Driver` 内部实现和 HAL 绑定，但不能随意改变当前项目声明的依赖契约
-- 换构建工具时只改 `.workflow/project.yaml`、`tools/workflow.py` 或平台 adapter，不改分层架构
-- 当前项目的分层代码必须放在 `.context/engineering.yaml` 声明的架构目录下
-- ❌ **禁止**创建 `USER/` 目录存放分层代码
-- ❌ **禁止**把声明的架构目录放进 `Core/` 内（`Core/` 只放 CubeMX 生成代码）
-
-### 目录边界规则
-
-AI workflow 本身的稳定目录：
-
-| 目录 | 含义 |
-|------|------|
-| `docs/` | 项目知识库、参考资料和说明 |
-| `.context/` | AI 接手事实源 |
-| `.workflow/` | 项目工作流配置 |
-| `.agents/` | Agent-neutral AI 工作流资产和 canonical Skills |
-| `tools/` | 确定性工具和 adapter |
-| `reports/` | 当前证据快照，默认覆盖 |
-
-当前模板工程声明的架构目录：
-
-| 目录 | 含义 |
-|------|------|
-| `App/` | 应用行为和业务逻辑 |
-| `Service/` | 硬件能力抽象和业务可用服务 |
-| `Driver/` | 工程自有驱动 API 和底层封装 |
-| `Test/` | 固件测试代码 |
-
-平台、工具链或本地环境相关目录：
-
-| 目录或文件 | 含义 |
-|------------|------|
-| `Core/` | CubeMX 生成的平台代码 |
-| `Drivers/` | 厂商 HAL/CMSIS 代码 |
-| `MDK-ARM/` | Keil 工程 adapter |
-| `.vscode/` | 本地编辑器配置 |
-| `.claude/` | 可选 Claude/Codex Skill adapter |
-| `very_test.ioc` | CubeMX 硬件/平台配置源 |
-
-换 Windows/Linux、Keil/GCC/CMake、OpenOCD/GDB 或 AI Agent 时，优先保持 workflow 稳定目录和当前项目声明的架构目录不动。若复用到不同架构的项目，先改 `.context/engineering.yaml` 和 `.workflow/project.yaml`，再重新生成 `.project_structure`。
-
-### 报告目录规则
-
-`reports/` 是当前证据快照目录。build、flash、check、review、verify 等报告都必须写到这里，并使用固定文件名覆盖旧结果。历史摘要写入 `PROJECT_LOG.md` 或 `EVOLUTION.md`，不要靠堆报告文件保存历史。
-
----
-
-## 可用 Agent 工作流入口
-
-本工程默认以 `AGENTS.md`、`.context/`、`.workflow/`、`.agents/skills/` 和 `tools/` 作为通用 Agent 接口。`.claude/skills/` 是 Claude/Codex Skill 兼容镜像；其他 AI 优先读取 `.agents/skills/` 作为流程说明，也可以直接调用下方对应的 `tools/*.py` 命令。
-
-规则文件采用“两层入口”：
-
-- 根目录 `AGENTS.md`、`CLAUDE.md` 是 Agent 自动发现入口和兼容入口。
-- `.agents/rules/` 是通用规则源，例如规则文件放置策略和强制 git 提交策略。
-- `.agents/skills/` 是通用 Skill 源，`.claude/skills/` 只是兼容镜像。
-
-### 需求与架构
-- `/req` — 将口头需求转为标准 `需求.md`
-- `/arch` — 基于需求生成交互式架构设计 `ARCHITECTURE_PLAN.md`
-- `/sync-req` — 需求变更的唯一入口
-
-### 构建与验证
-- `/build` — 按 `.workflow/project.yaml` 编译当前工程（自动先执行 `/check-req`）
-- `/flash` — 烧录到 STM32
-- `/bf` — `build` + `flash` 组合
-- `/verify` — 完整验证：检查一致性 → 编译 TEST_MODE 测试固件 → 烧录 → 固件自动输出 JSON 测试结果 → AI 智能修复失败项
-
-### 代码质量
-- `/check-req` — 检测代码与需求文档是否一致
-- `/code-reviewer` — AI SubAgent 语义代码审查（ISR 安全、死循环、栈溢出、时钟使能、硬件时序计算、跨文件分析等）
-
-### 驱动开发
-- `/driver-dev` — 读取 datasheet/参考代码，生成 Driver 层代码和测试代码，并通过 adapter 注册到当前工程
-
-### 项目总控
-- `/dev` — 查看项目状态和下一步建议
-- `/dev --go` — 自动推进当前任务链
-- `/dev --plan` — 生成今日开发计划
-- `/dev --wrap` — 结束今日工作并建议 commit
-
-### Git 强制保存
-
-任何 Agent 修改文件后，都必须先暂存本次任务变更，验证可用后再提交，除非用户明确说不要提交：
-
-```bash
-python tools/git_guard.py status
-python tools/git_guard.py stage --paths <task-owned-files>
-python tools/git_guard.py pre-final
-python tools/git_guard.py commit --message "type: summary" --paths <task-owned-files>
-```
-
-不要每做一步都提交。先暂存本次任务拥有的文件作为检查点，验证可用后再提交；不能把用户已有改动、本地设置或生成依赖文件混进提交。
-
-### 日志强制记录
-
-任何 Agent 修改文件后，都必须更新持久日志：
-
-| 记录位置 | 用途 |
-|----------|------|
-| `PROJECT_LOG.md` | 日常开发进展、验证结果、阻塞项、下一步 |
-| `EVOLUTION.md` | 工程框架、规则、Skill、tools、目录边界等结构演进 |
-
-检查命令：
-
-```bash
+python tools/agent_assets.py validate
+python tools/project_structure.py generate
 python tools/log_guard.py validate --mode either
+python tools/git_guard.py status
 ```
 
----
+在未配置真实工程时，`build` 和 `flash` 会提示你先配置 adapter。
 
-## 工作流示例
+## Reports 规则
 
-### 标准应用开发流程
+所有工具报告都写入 `reports/`，并使用固定文件名覆盖旧结果。历史结论写入 `PROJECT_LOG.md` 或 `EVOLUTION.md`。
 
-```
-/req "实现呼吸灯，周期8秒，PC13低电平有效"
-    ↓
-/arch
-    ↓
-（基于 ARCHITECTURE_PLAN.md 生成代码）
-    ↓
-/dev --go  →  自动: check-req → build → verify
-```
+常用固定文件：
 
-### 驱动开荒流程
+- `reports/build_log.txt`
+- `reports/flash_log.txt`
+- `reports/check_req_report.md`
+- `reports/code_review_report.md`
+- `reports/verify_report.md`
 
-```
-/driver-dev @ST7789_datasheet.pdf --name st7789 --interface SPI
-    ↓
-/dev --go  →  自动: code-reviewer → build
-    ↓
-在 main.c 中调用 st7789_Driver_Test()
-    ↓
-/bf 编译烧录，用逻辑分析仪抓波形验证
-```
+## Git 与日志规则
 
----
+Agent 修改文件后必须：
 
-## 复制时的注意事项
+1. 运行 `python tools/git_guard.py status`
+2. 更新 `PROJECT_LOG.md` 和/或 `EVOLUTION.md`
+3. 只暂存本次任务拥有的文件
+4. 验证通过后提交
 
-1. **保留的规范文件**（必须跟着走）：
-   - `AGENTS.md`
-   - `CLAUDE.md`
-   - `.context/` 目录
-   - `.workflow/` 目录
-   - `.agents/` 目录
-   - `docs/` 目录（含 `reference/`）
-   - `.claude/skills/` 目录（如果使用 Claude/Codex Skill 兼容镜像）
-   - `tools/` 目录
+不要每个小步骤都 commit；用 staged checkpoint 表示当前候选状态。
 
-2. **需要清空的文件**：
-   - `PROJECT_LOG.md`
-   - `EVOLUTION.md`
-   - `需求.md`
-   - `docs/ARCH_PLAN_DESIGN.md`
-   - `App/`、`Service/`、`Driver/`、`Test/` 下的业务代码
+## 测试清单
 
----
-
-## 依赖环境
-
-- **Keil MDK-ARM**（当前 adapter 使用；路径在 `.workflow/project.yaml` 的 `toolchain.exe` 修改）
-- **Git Bash**（Windows）或 **WSL**（用于运行 `.sh` 构建脚本）
-- **ST-Link / DAP-Link** 调试器
-- **Python 3.8+**（`verify` 和上下文工具需要 `pyserial`、`pyyaml`）
-- **任意支持读写文件和运行命令的 AI Agent**（Claude/Codex Skill 适配器可选）
-
----
-
-## 许可证
-
-本模板工程内的代码和文档可自由复制和修改，用于个人或商业项目。
+见 [docs/TEST_CHECKLIST.md](docs/TEST_CHECKLIST.md)。

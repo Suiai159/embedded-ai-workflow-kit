@@ -1,50 +1,40 @@
 # Build outputs
-MDK-ARM/*/ very_test
+build/
+out/
+dist/
 *.axf
+*.elf
 *.hex
 *.bin
 *.map
 *.lst
 *.dep
 *.lnp
-*.iex
-*.sct
-*.tra
-*.sct.bak
-
-# Object files
 *.o
 *.obj
-*.crf
 *.d
 
-# Keil UV4 project files
+# Tool/IDE generated files
 *.uvguix.*
 *.uvoptx
 *.uvopt
 *.uvgui.*
 *.scvd
+*.code-workspace
+.vscode/
+.cache/
+__pycache__/
 
-# Log files
+# Logs and generated reports
 *.htm
 *.html
 *.txt
 !README.txt
-
-# J-Link
-JLink*
-
-# VSCode
-.vscode/
-*.code-workspace
-
-# Cache
-.cache/
-__pycache__/
-
-# Reports (current evidence snapshots; generated reports are not tracked)
 reports/*
 !reports/README.md
+
+# Debug probes / local tooling
+JLink*
 
 # OS files
 .DS_Store

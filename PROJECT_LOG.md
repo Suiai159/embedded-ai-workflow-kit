@@ -1,7 +1,7 @@
 # 项目开发日志
 
 ## 活跃任务
-- [x] [arch] 修正架构目录复用边界：App/Service/Driver 是当前模板架构，不是 AI workflow 强制绑定目录。
+- [x] [cleanup] 清理旧项目事实，将仓库切换为未配置的 workflow kit。
 
 ## 阻塞项
 <!-- 需要外部资源或人类决策才能继续的事项 -->
@@ -18,6 +18,24 @@
 
 ### 问题 & 解决
 - [x] [architecture] 之前把当前模板的 App/Service/Driver 误表达为工作流框架绑定。已修正为“当前项目架构声明”。
+
+### 待跟进
+*无*
+
+---
+
+## 2026-05-10
+
+### 已完成
+- [x] [cleanup] 将 `.workflow/project.yaml` 改为 `workflow_kit` 模式，默认 `toolchain.type: none`。
+- [x] [cleanup] 清空旧 STM32/Keil/CubeMX 上下文事实，改为未配置占位。
+- [x] [cleanup] 删除旧板卡、CubeMX、架构示例文档和 Keil wrapper 工具。
+- [x] [test] 保留测试接口，但默认不创建 `Test/` 目录。
+- [x] [test] `context validate`、`workflow verify-config`、`agent_assets validate` 已通过。
+
+### 问题 & 解决
+- [x] [config] 旧 context 仍要求 `App/Service/Driver` 和 `very_test.ioc` 存在。已改为 workflow kit 模式下不要求项目架构目录。
+- [x] [config] 旧 workflow 默认 Keil。已改为未配置 adapter，并在 build/flash 时给出清晰配置提示。
 
 ### 待跟进
 *无*

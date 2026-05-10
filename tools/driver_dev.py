@@ -1,41 +1,47 @@
 #!/usr/bin/env python3
-"""
-Driver Dev Tool - 外设驱动开发辅助工具
-自动管理 Keil 工程文件注册
-"""
+"""Driver/module development helper for the configured project layout."""
 
-import sys
-import os
+from __future__ import annotations
+
 import argparse
 import subprocess
+import sys
 from pathlib import Path
 
 from workflow import cfg_get, find_project_root, load_config
 
-# 修复 Windows 终端编码问题
-if sys.platform == 'win32':
-    import io
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 PROJECT_ROOT = find_project_root()
 CONFIG = load_config(PROJECT_ROOT)
-DRIVER_REL_DIR = Path(str(cfg_get(CONFIG, "layout.driver", "Driver")))
-TEST_REL_DIR = Path(str(cfg_get(CONFIG, "layout.test", "Test")))
-DRIVER_DIR = PROJECT_ROOT / DRIVER_REL_DIR
-TEST_DIR = PROJECT_ROOT / TEST_REL_DIR
 
-def ensure_directories():
-    """确保目录存在"""
-    DRIVER_DIR.mkdir(parents=True, exist_ok=True)
-    TEST_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"✅ 目录检查: {DRIVER_REL_DIR}, {TEST_REL_DIR}")
 
-def add_to_keil(driver_name):
-    """将驱动和测试代码添加到配置声明的工程文件"""
+def configured_path(*keys: str) -> Path | None:
+    for key in keys:
+        value = cfg_get(CONFIG, key)
+        if value:
+            return Path(str(value))
+    return None
+
+
+def resolve_layout(source_dir: str | None, test_dir: str | None) -> tuple[Path, Path | None]:
+    source_rel = Path(source_dir) if source_dir else configured_path("layout.driver", "layout.source", "layout.sources")
+    test_rel = Path(test_dir) if test_dir else configured_path("layout.test", "layout.tests")
+
+    if source_rel is None:
+        raise RuntimeError(
+            "No driver/source directory configured. Pass --source-dir or declare "
+            "layout.driver/layout.source in .workflow/project.yaml."
+        )
+
+    source_abs = PROJECT_ROOT / source_rel
+    test_abs = PROJECT_ROOT / test_rel if test_rel is not None else None
+    return source_abs, test_abs
+
+
+def register_with_workflow(module_name: str) -> bool:
     workflow = PROJECT_ROOT / "tools" / "workflow.py"
     result = subprocess.run(
-        [sys.executable, str(workflow), "register-driver", "--name", driver_name],
+        [sys.executable, str(workflow), "register-driver", "--name", module_name],
         cwd=PROJECT_ROOT,
         text=True,
         capture_output=True,
@@ -46,112 +52,102 @@ def add_to_keil(driver_name):
         print(result.stderr, end="", file=sys.stderr)
     return result.returncode == 0
 
-def generate_skeleton(driver_name, interface):
-    """生成驱动和测试代码的骨架文件（如果还不存在）"""
-    driver_h = DRIVER_DIR / f"{driver_name}_driver.h"
-    driver_c = DRIVER_DIR / f"{driver_name}_driver.c"
-    test_c = TEST_DIR / f"{driver_name}_driver_test.c"
 
-    if not driver_h.exists():
-        header = f"""#ifndef __{driver_name.upper()}_DRIVER_H
-#define __{driver_name.upper()}_DRIVER_H
+def write_if_missing(path: Path, content: str) -> bool:
+    if path.exists():
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+    return True
 
-#include <stdint.h>
+
+def generate_skeleton(module_name: str, interface: str, source_dir: Path, test_dir: Path | None) -> None:
+    guard = f"__{module_name.upper()}_DRIVER_H"
+    header_path = source_dir / f"{module_name}_driver.h"
+    source_path = source_dir / f"{module_name}_driver.c"
+
+    header = f"""#ifndef {guard}
+#define {guard}
+
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {{
 #endif
 
-/* {driver_name} Driver - Interface: {interface} */
-
-int {driver_name}_Driver_Init(void);
-int {driver_name}_Driver_DeInit(void);
-
-/* TODO: Add read/write/control APIs */
+int {module_name}_Driver_Init(void);
+int {module_name}_Driver_DeInit(void);
 
 #ifdef __cplusplus
 }}
 #endif
 
-#endif /* __{driver_name.upper()}_DRIVER_H */
+#endif /* {guard} */
 """
-        driver_h.write_text(header, encoding='utf-8')
-        print(f"📝 生成骨架: {driver_h}")
+    source = f"""#include "{module_name}_driver.h"
 
-    if not driver_c.exists():
-        source = f"""#include "{driver_name}_driver.h"
+/* Interface: {interface or "unconfigured"} */
 
-/* {driver_name} Driver Implementation */
-/* Interface: {interface} */
-
-int {driver_name}_Driver_Init(void)
+int {module_name}_Driver_Init(void)
 {{
-    /* TODO: Initialize {interface} peripheral and device */
     return 0;
 }}
 
-int {driver_name}_Driver_DeInit(void)
+int {module_name}_Driver_DeInit(void)
 {{
-    /* TODO: De-initialize */
     return 0;
 }}
 """
-        driver_c.write_text(source, encoding='utf-8')
-        print(f"📝 生成骨架: {driver_c}")
 
-    if not test_c.exists():
-        test = f"""#include "{driver_name}_driver.h"
-#include <stdio.h>
+    for path, content in ((header_path, header), (source_path, source)):
+        if write_if_missing(path, content):
+            print(f"created {path.relative_to(PROJECT_ROOT).as_posix()}")
+        else:
+            print(f"kept existing {path.relative_to(PROJECT_ROOT).as_posix()}")
 
-/* {driver_name} Driver Test */
+    if test_dir is None:
+        print("test skeleton skipped: no test directory configured")
+        return
 
-void {driver_name}_Driver_Test(void)
+    test_path = test_dir / f"{module_name}_driver_test.c"
+    test = f"""#include "{module_name}_driver.h"
+
+int {module_name}_Driver_Test(void)
 {{
-    printf("[{driver_name}] Starting driver test...\\r\\n");
-
-    if ({driver_name}_Driver_Init() != 0) {{
-        printf("[{driver_name}] Init failed!\\r\\n");
-        return;
-    }}
-
-    /* TODO: Add test cases */
-
-    printf("[{driver_name}] Test completed.\\r\\n");
+    return {module_name}_Driver_Init();
 }}
 """
-        test_c.write_text(test, encoding='utf-8')
-        print(f"📝 生成骨架: {test_c}")
+    if write_if_missing(test_path, test):
+        print(f"created {test_path.relative_to(PROJECT_ROOT).as_posix()}")
+    else:
+        print(f"kept existing {test_path.relative_to(PROJECT_ROOT).as_posix()}")
 
-def main():
-    parser = argparse.ArgumentParser(description="Driver Dev Tool")
-    parser.add_argument("--name", "-n", required=True, help="驱动名称，如 st7789")
-    parser.add_argument("--interface", "-i", default="", help="通信接口，如 SPI/I2C/UART")
-    parser.add_argument("--add-to-keil", action="store_true", help="注册到当前配置声明的工程（兼容旧参数名）")
-    parser.add_argument("--skeleton", action="store_true", help="生成骨架文件")
 
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Create and optionally register a configured project driver/module.")
+    parser.add_argument("--name", "-n", required=True, help="Driver/module name, for example st7789.")
+    parser.add_argument("--interface", "-i", default="", help="Interface note, for example SPI/I2C/UART.")
+    parser.add_argument("--source-dir", help="Project source/driver directory. Overrides workflow layout.")
+    parser.add_argument("--test-dir", help="Project test directory. Overrides workflow layout.")
+    parser.add_argument("--skeleton", action="store_true", help="Generate missing skeleton files.")
+    parser.add_argument("--register", action="store_true", help="Register generated files through tools/workflow.py.")
+    parser.add_argument("--add-to-keil", action="store_true", help="Deprecated alias for --register.")
     args = parser.parse_args()
 
-    driver_name = args.name.lower().replace(" ", "_")
-
-    ensure_directories()
+    module_name = args.name.lower().replace(" ", "_")
+    source_dir, test_dir = resolve_layout(args.source_dir, args.test_dir)
 
     if args.skeleton:
-        generate_skeleton(driver_name, args.interface)
+        generate_skeleton(module_name, args.interface, source_dir, test_dir)
 
-    if args.add_to_keil:
-        if not add_to_keil(driver_name):
+    if args.register or args.add_to_keil:
+        if not register_with_workflow(module_name):
             return 1
 
-    # 打印总结
-    print(f"\n📋 驱动开发准备完成:")
-    print(f"   驱动头文件: {DRIVER_REL_DIR}/{driver_name}_driver.h")
-    print(f"   驱动源文件: {DRIVER_REL_DIR}/{driver_name}_driver.c")
-    print(f"   测试代码  : {TEST_REL_DIR}/{driver_name}_driver_test.c")
-    if args.add_to_keil:
-        print(f"   工程注册  : 已处理")
-
+    print("driver/module helper complete")
     return 0
 
-if __name__ == '__main__':
-    sys.exit(main())
+
+if __name__ == "__main__":
+    raise SystemExit(main())

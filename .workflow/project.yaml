@@ -1,41 +1,52 @@
+workflow:
+  mode: workflow_kit
+  description: Agent-neutral embedded workflow package. Configure this file after copying the workflow into a concrete project.
+
 project:
-  name: very_test
+  name: embedded-ai-workflow-kit
+  kind: workflow_kit
 
 board:
-  name: STM32F103 template board
+  name: unconfigured
 
 mcu:
-  family: STM32F1xx
-  device: STM32F103C8
+  family: unconfigured
+  device: unconfigured
 
 toolchain:
-  type: keil
-  project_file: MDK-ARM/very_test.uvprojx
-  exe: D:/Keil5/UV4/UV4.exe
-  groups:
-    driver: Driver
-    test: Test
+  type: none
+  # Supported adapter values after project setup:
+  # - gcc
+  # - cmake
+  # - keil
 
 build:
-  hex_path: MDK-ARM/very_test/very_test.hex
   log_path: reports/build_log.txt
+  # command: make
+  # test_command: make test
+  # elf_path: build/firmware.elf
+  # hex_path: build/firmware.hex
 
 flash:
-  method: keil
+  method: none
   log_path: reports/flash_log.txt
+  # method: command
+  # command: openocd -f interface/stlink.cfg -f target/<target>.cfg -c "program build/firmware.elf verify reset exit"
+
+verify:
+  report_path: reports/verify_report.md
+  # command: python .agents/skills/verify/verify.py --single-run --max-retries 0 --req requirements.md
 
 serial:
-  port: auto
+  port: unconfigured
   baudrate: 115200
 
 layout:
-  app: App
-  service: Service
-  driver: Driver
-  test: Test
   reports: reports
+  architecture: []
+  tests: []
 
-# Adapter examples for future projects:
+# Example snippets for concrete projects:
 #
 # GCC / Make-style project:
 # toolchain:
@@ -50,6 +61,10 @@ layout:
 #   method: command
 #   command: openocd -f interface/stlink.cfg -f target/stm32f1x.cfg -c "program build/firmware.elf verify reset exit"
 #   log_path: reports/flash_log.txt
+# layout:
+#   reports: reports
+#   architecture: [src, include]
+#   tests: [tests]
 #
 # CMake project:
 # toolchain:
@@ -62,10 +77,15 @@ layout:
 #   test_configure_args: -DTEST_MODE=ON
 # build:
 #   target: all
-#   test_target: all
+#   test_target: test
 #   elf_path: build/firmware.elf
 #   hex_path: build/firmware.hex
 #   log_path: reports/build_log.txt
 # flash:
 #   method: command
-#   command: openocd -f interface/stlink.cfg -f target/stm32f1x.cfg -c "program build/firmware.elf verify reset exit"
+#   command: openocd -f interface/stlink.cfg -f target/<target>.cfg -c "program build/firmware.elf verify reset exit"
+#   log_path: reports/flash_log.txt
+# layout:
+#   reports: reports
+#   architecture: [src, include]
+#   tests: [tests]

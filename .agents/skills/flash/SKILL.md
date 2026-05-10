@@ -1,6 +1,6 @@
 ---
 name: flash
-description: Flash the configured embedded firmware through tools/workflow.py. Use for downloading compiled firmware without hard-coding board, hex, or tool paths; supports Keil and generic command flashing.
+description: Flash the configured embedded firmware through tools/workflow.py. Use for downloading compiled firmware without hard-coding board, artifact, or tool paths.
 user-invocable: true
 ---
 

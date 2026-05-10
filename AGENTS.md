@@ -1,12 +1,12 @@
 # Agent Handoff Guide
 
-This project is designed for any capable AI coding agent, not for a single vendor or tool.
+This repository is an agent-neutral embedded workflow kit.
 
-`AGENTS.md` is the generic root entry point. Canonical reusable rules live under `.agents/rules/`, and canonical Skills live under `.agents/skills/`. `CLAUDE.md` and `.claude/skills/` are kept as compatibility entries for Claude Code style agents. Other agents should follow the same project facts and call the same deterministic tools.
+It is not bound to a board, MCU, IDE, toolchain, architecture layout, or Agent vendor.
 
 ## First Read Order
 
-Before changing code, read or summarize these sources in order:
+Before changing files, read or summarize:
 
 1. `.context/engineering.yaml`
 2. `.context/hardware.yaml`
@@ -19,7 +19,7 @@ Before changing code, read or summarize these sources in order:
 9. `需求.md`
 10. Relevant source files
 
-Run this first when possible:
+Run:
 
 ```bash
 python tools/context.py validate
@@ -29,76 +29,48 @@ python tools/git_guard.py status
 python tools/log_guard.py status
 ```
 
-## Agent-Neutral Contract
+## Core Contract
 
-- Do not infer board pins, signal polarity, clock rates, toolchain paths, or current runtime status from conversation history.
-- Use `.context/` for project facts, `.workflow/project.yaml` for toolchain/layout configuration, `.agents/rules/` for canonical Agent rules, and `.agents/skills/` for canonical Skills.
-- Use `tools/workflow.py` for build, flash, status, and source registration.
-- Use `tools/context.py touch-runtime` after build, flash, or verify evidence changes.
-- Write all reports and logs to fixed paths under `reports/`; overwrite current reports by default instead of creating timestamped files.
-- Keep generated/vendor areas (`Core/`, `Drivers/`, `.ioc`, tool project files) separate from hand-maintained code unless the task explicitly targets generated code.
-- Any Agent that changes files must update `PROJECT_LOG.md` and/or `EVOLUTION.md`. See `.agents/rules/logging.md`.
-- Any Agent that changes files must stage coherent task-owned checkpoints, validate them, then commit the usable checkpoint unless the user explicitly says not to commit. See `.agents/rules/git.md`.
+- Do not guess architecture directories, board pins, clocks, toolchain paths, or runtime status.
+- Use `.context/` for project facts.
+- Use `.workflow/project.yaml` for toolchain, build, flash, verify, and layout configuration.
+- Use `.agents/rules/` for reusable Agent policy.
+- Use `.agents/skills/` for canonical Skills.
+- Use `tools/workflow.py` for deterministic build/flash/status/source-registration actions.
+- Write generated reports only to `reports/` with fixed overwrite paths.
+- Update `PROJECT_LOG.md` and/or `EVOLUTION.md` for meaningful changes.
+- Stage coherent task-owned checkpoints, validate, then commit after validation passes.
 
-## Current Workflow Adapter
+## Architecture
 
-The repository keeps canonical Skill definitions under `.agents/skills/`. `.claude/skills/` is a compatibility mirror for agents that discover Skills from Claude-style paths.
+The workflow kit does not mandate `App/Service/Driver`, `src/include`, or any other layout.
 
-Equivalent actions for any agent:
+A concrete project must declare its architecture in `.context/engineering.yaml` and `.workflow/project.yaml`.
 
-| Intent | Generic command or source |
-|--------|---------------------------|
-| Context handoff | `python tools/context.py summary` |
+## Testing
+
+The workflow keeps testing as a first-class interface, but it does not create a default `Test/` directory.
+
+Concrete projects may configure:
+
+- `build.test_command`
+- `verify.command`
+- `verify.report_path`
+- `layout.tests`
+
+## Common Commands
+
+| Intent | Command |
+|--------|---------|
+| Context summary | `python tools/context.py summary` |
 | Validate context | `python tools/context.py validate` |
-| Build | `python tools/workflow.py build` |
-| Test build | `python tools/workflow.py build --test` |
-| Flash | `python tools/workflow.py flash` |
-| Register driver files | `python tools/workflow.py register-driver --name <name>` |
-| Query next step | `python tools/dev_orchestrator.py --query-next-step` |
+| Validate workflow config | `python tools/workflow.py verify-config` |
+| Generate structure snapshot | `python tools/workflow.py structure` |
+| Build configured project | `python tools/workflow.py build` |
+| Build test firmware/target | `python tools/workflow.py build --test` |
+| Flash configured artifact | `python tools/workflow.py flash` |
+| Validate Agent assets | `python tools/agent_assets.py validate` |
+| Validate logs | `python tools/log_guard.py validate --mode either` |
+| Git status | `python tools/git_guard.py status` |
 
-## Development Rules
-
-- Requirement-driven work starts from `需求.md`.
-- `App/`, `Service/`, and `Driver/` are this template project's declared architecture layers, not mandatory workflow-framework directories.
-- Read `.context/engineering.yaml` to discover the current project's architecture layers and dependency rules.
-- This template currently follows `App -> Service -> Driver -> HAL/platform`.
-- Toolchain and host-platform variation belongs in `.workflow/project.yaml`, `tools/workflow.py`, and platform adapters.
-- MCU/board migration may change declared lower-layer internals and HAL bindings, but must preserve the current project's declared architecture contract unless the architecture is explicitly redesigned.
-- Hardware resource ownership is defined in `.context/hardware.yaml`.
-- Current runtime state is defined in `.context/runtime.yaml`.
-- Structural workflow changes should be recorded in `EVOLUTION.md`.
-
-## Directory Boundary
-
-Workflow-invariant directories:
-
-| Directory | Meaning |
-|-----------|---------|
-| `docs/` | Project knowledge base |
-| `.context/` | AI handoff facts |
-| `.workflow/` | Project workflow configuration |
-| `.agents/` | Agent-neutral rules, workflow assets, and canonical Skills |
-| `tools/` | Deterministic automation and adapters |
-| `reports/` | Current evidence snapshots, overwritten by default |
-
-Current project architecture directories:
-
-| Directory | Meaning |
-|-----------|---------|
-| `App/` | Application behavior and business logic |
-| `Service/` | Hardware feature abstraction |
-| `Driver/` | Project-owned driver APIs and low-level wrappers |
-| `Test/` | Firmware test code |
-
-Platform, tool, IDE, or local adapter areas:
-
-| Directory or file | Meaning |
-|-------------------|---------|
-| `Core/` | CubeMX/generated platform code |
-| `Drivers/` | Vendor HAL/CMSIS code |
-| `MDK-ARM/` | Keil project adapter |
-| `.vscode/` | Local editor settings |
-| `.claude/` | Optional Claude/Codex Skill adapter |
-| `very_test.ioc` | CubeMX hardware/platform source |
-
-When switching Windows/Linux, Keil/GCC/CMake, OpenOCD/GDB, or AI agents, preserve workflow-invariant directories and the current project's declared architecture directories. When reusing the workflow in a different project, update `.context/engineering.yaml` and `.workflow/project.yaml` to declare that project's architecture.
+In unconfigured `workflow_kit` mode, build and flash should stop with clear configuration errors.
