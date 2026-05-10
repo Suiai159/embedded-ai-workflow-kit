@@ -25,3 +25,7 @@ Useful commands:
 ```bash
 python tools/agent_assets.py validate
 ```
+
+Useful adoption Skill:
+
+- `/project-port`: guide an Agent/user Q&A flow for configuring this workflow kit inside a real embedded project.

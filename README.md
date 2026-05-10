@@ -30,6 +30,7 @@ EVOLUTION.md
 ## 接入一个真实工程
 
 1. 复制 workflow 目录和入口文件到你的工程。
+   - 也可以直接让 Agent 使用 `/project-port` Skill，通过问答方式完成下面的配置迁移。
 2. 修改 `.workflow/project.yaml`：
    - `project.name`
    - `toolchain.type`

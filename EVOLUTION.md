@@ -6,6 +6,16 @@
 
 ## 2026-05-10
 
+### [skill] 新增真实工程接入向导
+
+**目标**：把“从第二步开始修改 `.workflow/project.yaml` 和 `.context/*.yaml`”沉淀为可复用的 Agent 问答式迁移流程。
+
+**改造**：
+- [skill] 新增 `.agents/skills/project-port/SKILL.md`，按项目形态、构建工具、烧录验证、硬件事实、版本运行状态分轮询问。
+- [policy] 明确接入过程不得默认创建 `App/Service/Driver/Test` 或假设某个板子、IDE、工具链。
+- [test] 保留测试接口采集：可声明测试目录，也可只声明 `build.test_command` / `verify.command`。
+- [doc] README 和 `.agents/README.md` 增加 `/project-port` 入口说明。
+
 ### [cleanup] 切换为未配置 workflow kit
 
 **目标**：让用户拿到 workflow 文件夹后不需要删除与自己工程无关的板卡、工具链、架构和 Agent 私有残留。

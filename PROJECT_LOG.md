@@ -9,6 +9,20 @@
 
 ---
 
+## 2026-05-10
+
+### 已完成
+- [x] [skill] 新增 `/project-port` Skill，用问答方式引导真实工程接入 workflow kit。
+- [x] [doc] README 和 `.agents/README.md` 补充 `/project-port` 作为接入真实工程的推荐入口。
+
+### 问题 & 解决
+- [x] [workflow] 手工从第二步开始修改配置容易遗漏上下文、测试接口和校验。已沉淀为可复用 Skill。
+
+### 待跟进
+*无*
+
+---
+
 ## 2026-05-07
 
 ### 已完成
