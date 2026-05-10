@@ -1,55 +1,55 @@
-# Project Structure
+# 工程结构
 
-> Generated file. Do not edit by hand.
-> Source of truth: `.context/engineering.yaml` + `.workflow/project.yaml`.
-> Regenerate with: `python tools/project_structure.py generate` or `python tools/workflow.py structure`.
+> 自动生成文件，请勿手动编辑。
+> 事实来源：`.context/engineering.yaml` + `.workflow/project.yaml`。
+> 重新生成：`python tools/project_structure.py generate` 或 `python tools/workflow.py structure`。
 
-## Project
+## 项目
 
-- Project: `embedded-ai-workflow-kit`
-- Board: `unconfigured`
-- MCU: `unconfigured`
-- Reports directory: `reports`
+- 项目：`embedded-ai-workflow-kit`
+- 板卡：`unconfigured`
+- MCU：`unconfigured`
+- 报告目录：`reports`
 
-## Workflow-Invariant Directories
+## 工作流不变目录
 
-These directories belong to the reusable AI workflow framework. They are not architecture-layer directories and should stay stable when the host OS, IDE, compiler, debugger, or AI Agent changes.
+以下目录属于可复用的 AI 工作流框架。它们不是架构层目录，在主机操作系统、IDE、编译器、调试器或 AI Agent 更换时保持稳定。
 
-| Path | Role | Changes when | Exists |
-|------|------|--------------|--------|
-| `docs` | workflow documentation and handoff guides | workflow rules, test checklist, or usage docs change | yes |
-| `.context` | AI handoff fact source | engineering, hardware, version, or runtime facts change | yes |
-| `.workflow` | workflow/project configuration source | project, toolchain, layout, test, flash, or report configuration changes | yes |
-| `.agents` | agent-neutral rules and canonical Skills | Agent rules, Skills, or compatibility metadata change | yes |
-| `tools` | deterministic workflow commands and adapters | workflow actions or adapters change | yes |
-| `reports` | current evidence snapshots for automation reports | build, flash, review, check, or verify evidence is refreshed | yes |
+| 路径 | 作用 | 变更时机 | 是否存在 |
+| ------ | ------ | ---------- | ---------- |
+| `docs` | 工作流文档和交接指南 | 工作流规则、测试清单或使用文档变更时 | 是 |
+| `.context` | AI 交接事实源 | 工程、硬件、版本或运行时事实变更时 | 是 |
+| `.workflow` | 工作流/项目配置源 | 项目、工具链、布局、测试、烧录或报告配置变更时 | 是 |
+| `.agents` | Agent 中立规则和规范 Skill | Agent 规则、Skill 或兼容性元数据变更时 | 是 |
+| `tools` | 确定性工作流命令和适配器 | 工作流操作或适配器变更时 | 是 |
+| `reports` | 自动化报告的当前证据快照 | 编译、烧录、审查、检查或验证证据刷新时 | 是 |
 
-## Current Project Architecture Directories
+## 当前项目架构目录
 
-These directories are this project's declared architecture. They are configurable project facts, not mandatory directories for every project that reuses the AI workflow.
+以下目录是该项目声明的架构。它们是可配置的项目事实，而非每个复用了 AI 工作流的项目的必选目录。
 
-| Path | Role | Changes when | Exists |
-|------|------|--------------|--------|
+| 路径 | 作用 | 变更时机 | 是否存在 |
+| ------ | ------ | ---------- | ---------- |
 
-## Platform / Tool Adapter Boundaries
+## 平台/工具适配器边界
 
-These paths may vary when the MCU, board, IDE, toolchain, generated code, or optional Agent adapter changes.
+以下路径在 MCU、板卡、IDE、工具链、生成代码或可选 Agent 适配器变更时可能变化。
 
-| Path | Role | Changes when | Exists |
-|------|------|--------------|--------|
+| 路径 | 作用 | 变更时机 | 是否存在 |
+| ------ | ------ | ---------- | ---------- |
 
-## Active Tool Adapter
+## 当前工具适配器
 
-| Fact | Value |
-|------|-------|
-| Active toolchain | `none` |
-| Build log | `reports/build_log.txt` |
-| Flash log | `reports/flash_log.txt` |
+| 事实 | 值 |
+| ------ | ------ |
+| 当前工具链 | `none` |
+| 编译日志 | `reports/build_log.txt` |
+| 烧录日志 | `reports/flash_log.txt` |
 
-## Hard Rules
+## 硬性规则
 
-- New layered code goes only into this project's declared architecture directories.
-- Do not move declared architecture directories into generated/vendor/platform adapter directories.
-- A different project may declare different architecture directories in `.context/engineering.yaml` and `.workflow/project.yaml`.
-- Host OS, compiler, IDE, debugger, and flash-tool changes belong in `.workflow/project.yaml`, `tools/`, or adapter directories.
-- Build, flash, check, review, and verify reports belong under `reports/` with fixed overwrite paths.
+- 新增分层代码只能放在该项目声明的架构目录中。
+- 不得将声明的架构目录移入生成代码/供应商/平台适配器目录。
+- 不同项目可以在 `.context/engineering.yaml` 和 `.workflow/project.yaml` 中声明不同的架构目录。
+- 操作系统、编译器、IDE、调试器和烧录工具变更属于 `.workflow/project.yaml`、`tools/` 或适配器目录。
+- 编译、烧录、检查、审查和验证报告属于 `reports/`，使用固定的覆盖写入路径。

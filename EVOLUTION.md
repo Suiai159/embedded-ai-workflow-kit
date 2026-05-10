@@ -6,6 +6,45 @@
 
 ## 2026-05-10
 
+### [doc] 重写 README 为新用户引导 + 多场景入口
+
+**目标**：README 从"功能罗列 + 硬指令"改为面向不同阶段用户的引导文档。
+
+**改造**：
+
+- [doc] 开头列举 4 种典型用户场景（新工程、老工程、已用 AI 但缺上下文、评估中），读者自行对号入座
+- [doc] 接入方式拆为两条路：直接 `git clone`（主推）和手动复制（已有工程备选）
+- [doc] 明确桥接文件只需一行，解释 CLAUDE.md → AGENTS.md → .agents/rules/*.md 的发现链条
+- [doc] 语气从命令式改为说明式，用户不再感觉被 push
+
+### [cleanup] 清理冗余文件
+
+**目标**：删除重复内容，精简 kit 产物。
+
+**改造**：
+- [cleanup] 删除 `docs/项目介绍.md`（与 README.md 内容重叠）
+- [cleanup] `docs/TEST_CHECKLIST.md` 移出 git 跟踪（`.gitignore` + `git rm --cached`），保留本地
+
+### [doc] 全面中文化
+
+**目标**：kit 面向中文开发者，资产文件统一为中文。
+
+**改造**：
+
+- [doc] 翻译 `AGENTS.md`、`.agents/README.md` 为中文
+- [doc] 翻译 `.agents/rules/` 下全部 3 个规则文件（entrypoints.md、git.md、logging.md）
+- [doc] 翻译 `docs/WORKFLOW.md`、`.project_structure`
+
+### [config] 收紧 .gitignore
+
+**目标**：用户 `git clone` 后直接开发，不会把本地私密文件推上云端。
+
+**改造**：
+
+- [config] 删除全局 `*.txt`、`*.htm`、`*.html` 封锁（太容易误伤项目自有文件）
+- [config] 新增 `.claude/`（Claude Code 会话文件）、`.env` / `.env.*`（密钥）、`*.log`（日志）、编辑器 swap 文件
+- [config] 保留 `reports/*` + `!reports/README.md`，报告全拦但目录占位不丢
+
 ### [skill] 新增真实工程接入向导
 
 **目标**：把“从第二步开始修改 `.workflow/project.yaml` 和 `.context/*.yaml`”沉淀为可复用的 Agent 问答式迁移流程。

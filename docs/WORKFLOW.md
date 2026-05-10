@@ -1,24 +1,24 @@
-# Workflow Rules
+# 工作流规则
 
-This workflow kit is project-neutral. It orchestrates work, but the adopting project provides architecture, hardware, toolchain, and test facts.
+本工作流工具包是项目中立的。它编排工作，但接入项目需提供架构、硬件、工具链和测试事实。
 
-## Standard Flow
+## 标准流程
 
 ```text
-context validate
-→ requirement update
-→ architecture/design update
-→ code change
-→ review/check
-→ build
-→ test/verify
-→ reports/runtime update
-→ log update
-→ staged checkpoint
-→ commit after validation
+上下文验证
+→ 需求更新
+→ 架构/设计更新
+→ 代码修改
+→ 审查/检查
+→ 编译
+→ 测试/验证
+→ 报告/runtime 更新
+→ 日志更新
+→ 暂存检查点
+→ 验证后提交
 ```
 
-## Required Checks
+## 必需检查
 
 ```bash
 python tools/context.py validate
@@ -27,9 +27,9 @@ python tools/agent_assets.py validate
 python tools/log_guard.py validate --mode either
 ```
 
-## Build And Flash
+## 编译与烧录
 
-Use `tools/workflow.py`; do not hard-code tool commands in Agent prompts.
+使用 `tools/workflow.py`，不要在 Agent 提示中硬编码工具命令。
 
 ```bash
 python tools/workflow.py build
@@ -37,23 +37,23 @@ python tools/workflow.py build --test
 python tools/workflow.py flash
 ```
 
-If `toolchain.type: none`, build/flash should stop with a clear configuration message.
+如果 `toolchain.type: none`，编译/烧录应停止并显示清晰的配置提示。
 
-## Testing
+## 测试
 
-The workflow keeps test interfaces but does not create a default test directory.
+工作流保留测试接口，但不创建默认的测试目录。
 
-Concrete projects can configure:
+具体项目可以配置：
 
 - `build.test_command`
 - `verify.command`
 - `layout.tests`
 - `verify.report_path`
 
-## Reports
+## 报告
 
-All generated evidence goes under `reports/` with stable overwrite paths.
+所有生成的证据写入 `reports/`，使用固定的覆盖写入路径。
 
-## Git And Logs
+## Git 与日志
 
-Agents must update durable logs, stage task-owned files, validate, then commit the usable checkpoint.
+Agent 必须更新持久化日志、暂存任务所属文件、验证，然后提交可用的检查点。

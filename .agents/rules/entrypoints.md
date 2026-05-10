@@ -1,24 +1,24 @@
-# Agent Rule Entrypoints
+# Agent 规则入口文件
 
-Root-level Agent files are discovery shims. Keep them short enough for tools to find and read quickly.
+根目录的 Agent 文件是发现入口。保持简短，便于工具快速查找和读取。
 
-## Canonical Location
+## 规范位置
 
-Canonical Agent rules live under `.agents/rules/`.
+规范的 Agent 规则文件存放在 `.agents/rules/` 下。
 
-| Path | Role |
+| 路径 | 作用 |
 |------|------|
-| `AGENTS.md` | Generic root entrypoint for any AI Agent |
-| `.agents/rules/entrypoints.md` | Rule-file placement and discovery policy |
-| `.agents/rules/git.md` | Mandatory git save and commit policy |
-| `.agents/skills/` | Canonical reusable Skills |
+| `AGENTS.md` | 通用 AI Agent 根入口 |
+| `.agents/rules/entrypoints.md` | 规则文件布局和发现策略 |
+| `.agents/rules/git.md` | 强制 Git 保存和提交策略 |
+| `.agents/skills/` | 可复用的规范 Skill |
 
-## Rules
+## 规则
 
-- Keep root entrypoints as high-signal summaries.
-- Put reusable Agent policy in `.agents/rules/`.
-- Put reusable workflow Skills in `.agents/skills/`.
-- Put deterministic commands in `tools/`.
-- Put project facts in `.context/`.
-- Put toolchain and layout configuration in `.workflow/project.yaml`.
-- Do not make any tool-specific Agent directory the canonical home for project rules or Skills.
+- 根入口文件保持精简，只放高价值摘要信息。
+- 可复用的 Agent 策略放在 `.agents/rules/`。
+- 可复用的工作流 Skill 放在 `.agents/skills/`。
+- 确定性命令放在 `tools/`。
+- 项目事实放在 `.context/`。
+- 工具链和布局配置放在 `.workflow/project.yaml`。
+- 不得将任何工具特定的 Agent 目录作为项目规则或 Skill 的规范主目录。

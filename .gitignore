@@ -26,15 +26,27 @@ dist/
 __pycache__/
 
 # Logs and generated reports
-*.htm
-*.html
-*.txt
-!README.txt
 reports/*
 !reports/README.md
+*.log
 
 # Debug probes / local tooling
 JLink*
+
+# Internal test checklists
+docs/TEST_CHECKLIST.md
+
+# AI tool sessions (local only)
+.claude/
+
+# Environment / secrets
+.env
+.env.*
+
+# Editor swap files
+*.swp
+*.swo
+*~
 
 # OS files
 .DS_Store

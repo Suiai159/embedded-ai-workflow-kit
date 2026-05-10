@@ -79,16 +79,21 @@ Ask for:
 
 ## File Updates
 
-Update these files when enough facts are known:
+Start by clearing the template's own log history, then write project facts:
 
-- `.workflow/project.yaml`: project identity, adapter settings, build/flash/verify/test interfaces, reports, layout.
-- `.context/engineering.yaml` and `.context/engineering.md`: architecture, ownership, generated-code boundaries, modification rules.
-- `.context/hardware.yaml` and `.context/hardware.md`: board, MCU, clock, peripherals, pins, ownership, polarity.
-- `.context/version.yaml` and `.context/version.md`: tool versions, generated source, adapter versions.
-- `.context/runtime.yaml` and `.context/runtime.md`: current handoff state only.
-- `.project_structure`: regenerate with `python tools/project_structure.py generate`.
-- `PROJECT_LOG.md`: record the adoption step.
-- `EVOLUTION.md`: record structural workflow or migration changes.
+1. **Reset `EVOLUTION.md`**: Replace with header only — the workflow kit's own evolution history does not belong in the new project.
+2. **Reset `PROJECT_LOG.md`**: Replace with header and empty active-task section — the template's task log is not relevant.
+3. Update these files when enough facts are known:
+
+   - `.workflow/project.yaml`: project identity, adapter settings, build/flash/verify/test interfaces, reports, layout.
+   - `.context/engineering.yaml` and `.context/engineering.md`: architecture, ownership, generated-code boundaries, modification rules.
+   - `.context/hardware.yaml` and `.context/hardware.md`: board, MCU, clock, peripherals, pins, ownership, polarity.
+   - `.context/version.yaml` and `.context/version.md`: tool versions, generated source, adapter versions.
+   - `.context/runtime.yaml` and `.context/runtime.md`: current handoff state only.
+   - `.project_structure`: regenerate with `python tools/project_structure.py generate`.
+4. **Record the adoption** in both freshly cleared logs:
+   - `PROJECT_LOG.md`: log the adoption as the first task entry.
+   - `EVOLUTION.md`: log the adoption as the first structural change entry.
 
 ## Validation
 

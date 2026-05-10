@@ -1,12 +1,12 @@
-# Agent Handoff Guide
+# Agent 交接指南
 
-This repository is an agent-neutral embedded workflow kit.
+本仓库是一个 Agent 中立的嵌入式工作流工具包。
 
-It is not bound to a board, MCU, IDE, toolchain, architecture layout, or Agent vendor.
+它不绑定任何板卡、MCU、IDE、工具链、架构布局或 Agent 厂商。
 
-## First Read Order
+## 首次阅读顺序
 
-Before changing files, read or summarize:
+在修改文件之前，请阅读或摘要以下内容：
 
 1. `.context/engineering.yaml`
 2. `.context/hardware.yaml`
@@ -17,9 +17,9 @@ Before changing files, read or summarize:
 7. `.agents/rules/logging.md`
 8. `.workflow/project.yaml`
 9. `需求.md`
-10. Relevant source files
+10. 相关源文件
 
-Run:
+运行：
 
 ```bash
 python tools/context.py validate
@@ -29,48 +29,48 @@ python tools/git_guard.py status
 python tools/log_guard.py status
 ```
 
-## Core Contract
+## 核心约定
 
-- Do not guess architecture directories, board pins, clocks, toolchain paths, or runtime status.
-- Use `.context/` for project facts.
-- Use `.workflow/project.yaml` for toolchain, build, flash, verify, and layout configuration.
-- Use `.agents/rules/` for reusable Agent policy.
-- Use `.agents/skills/` for canonical Skills.
-- Use `tools/workflow.py` for deterministic build/flash/status/source-registration actions.
-- Write generated reports only to `reports/` with fixed overwrite paths.
-- Update `PROJECT_LOG.md` and/or `EVOLUTION.md` for meaningful changes.
-- Stage coherent task-owned checkpoints, validate, then commit after validation passes.
+- 不要猜测架构目录、板卡引脚、时钟、工具链路径或运行状态。
+- 使用 `.context/` 存放项目事实。
+- 使用 `.workflow/project.yaml` 存放工具链、编译、烧录、验证和布局配置。
+- 使用 `.agents/rules/` 存放可复用的 Agent 策略。
+- 使用 `.agents/skills/` 存放规范 Skill。
+- 使用 `tools/workflow.py` 执行确定性的编译/烧录/状态/源注册操作。
+- 生成的报告只写入 `reports/`，使用固定的覆盖写入路径。
+- 有意义的变更需更新 `PROJECT_LOG.md` 和/或 `EVOLUTION.md`。
+- 暂存连贯的任务所属检查点，验证通过后提交。
 
-## Architecture
+## 架构
 
-The workflow kit does not mandate `App/Service/Driver`, `src/include`, or any other layout.
+工作流工具包不强制使用 `App/Service/Driver`、`src/include` 或其他任何一种布局。
 
-A concrete project must declare its architecture in `.context/engineering.yaml` and `.workflow/project.yaml`.
+具体项目必须在 `.context/engineering.yaml` 和 `.workflow/project.yaml` 中声明其架构。
 
-## Testing
+## 测试
 
-The workflow keeps testing as a first-class interface, but it does not create a default `Test/` directory.
+工作流将测试作为一等接口保留，但不创建默认的 `Test/` 目录。
 
-Concrete projects may configure:
+具体项目可以配置：
 
 - `build.test_command`
 - `verify.command`
 - `verify.report_path`
 - `layout.tests`
 
-## Common Commands
+## 常用命令
 
-| Intent | Command |
-|--------|---------|
-| Context summary | `python tools/context.py summary` |
-| Validate context | `python tools/context.py validate` |
-| Validate workflow config | `python tools/workflow.py verify-config` |
-| Generate structure snapshot | `python tools/workflow.py structure` |
-| Build configured project | `python tools/workflow.py build` |
-| Build test firmware/target | `python tools/workflow.py build --test` |
-| Flash configured artifact | `python tools/workflow.py flash` |
-| Validate Agent assets | `python tools/agent_assets.py validate` |
-| Validate logs | `python tools/log_guard.py validate --mode either` |
-| Git status | `python tools/git_guard.py status` |
+| 用途 | 命令 |
+| ------ | ------ |
+| 上下文摘要 | `python tools/context.py summary` |
+| 验证上下文 | `python tools/context.py validate` |
+| 验证工作流配置 | `python tools/workflow.py verify-config` |
+| 生成结构快照 | `python tools/workflow.py structure` |
+| 编译已配置项目 | `python tools/workflow.py build` |
+| 编译测试固件/目标 | `python tools/workflow.py build --test` |
+| 烧录已配置产物 | `python tools/workflow.py flash` |
+| 验证 Agent 资产 | `python tools/agent_assets.py validate` |
+| 验证日志 | `python tools/log_guard.py validate --mode either` |
+| Git 状态 | `python tools/git_guard.py status` |
 
-In unconfigured `workflow_kit` mode, build and flash should stop with clear configuration errors.
+在未配置的 `workflow_kit` 模式下，编译和烧录应停止并显示清晰的配置错误提示。
