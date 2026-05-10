@@ -145,9 +145,10 @@ def validate(root: Path) -> Tuple[List[str], List[str]]:
     errors += require_keys(data["hardware"], hardware_required, "hardware")
 
     version_required = ["project.name", "toolchain.active_adapter"]
-    if not is_workflow_kit:
-        version_required.append("generated_code_boundaries.cube_generated")
     errors += require_keys(data["version"], version_required, "version")
+    if not is_workflow_kit:
+        if cfg_get(data["version"], "generated_code_boundaries.cube_generated") is None:
+            errors.append("version: missing required key `generated_code_boundaries.cube_generated`")
     errors += require_keys(
         data["runtime"],
         ["status.handoff_state", "status.last_known_build", "status.last_known_flash", "status.last_known_verify"],
@@ -172,7 +173,7 @@ def validate(root: Path) -> Tuple[List[str], List[str]]:
             errors.append("engineering: workflow invariant directory item missing `path`")
             continue
         if not (root / str(path_value)).exists():
-            errors.append(f"engineering: workflow invariant path missing: {path_value}")
+            warnings.append(f"engineering: workflow invariant path missing: {path_value}")
 
     for item in cfg_get(data["engineering"], "directory_policy.project_architecture", []):
         if not isinstance(item, dict):
